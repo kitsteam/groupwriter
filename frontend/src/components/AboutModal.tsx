@@ -39,7 +39,7 @@ export function AboutModal({
         <div className="block flex justify-center">
           <ul className="flex flex-row gap-x-4 mt-4">
             <li>
-              <a href="https://github.com/kitsteam/groupwriter-frontend">
+              <a href="https://github.com/kitsteam/groupwriter">
                 {t('modals.about.linkSourceCode')}
               </a>
             </li>
