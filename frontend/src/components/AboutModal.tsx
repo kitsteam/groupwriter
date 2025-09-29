@@ -4,7 +4,7 @@ import { EditorContext } from '../contexts/EditorContext';
 import { useNavigate } from 'react-router';
 import { deleteDocument } from '../utils/serverRequests';
 import { useTranslation } from 'react-i18next';
-import logo from '/images/logo.svg?url';
+import logo from '/images/publisher-logo.svg?url';
 import { deleteLocalDocument } from '../utils/localstorage';
 
 export function AboutModal({
@@ -34,12 +34,12 @@ export function AboutModal({
       onToggle={toggleModal}
     >
       <div className="mb-4">
-        <img src={logo} alt="logo" className="inline float-end m-4 w-20 h-20" />
+        <img src={logo} alt="logo" className="inline float-end m-4" />
         {t('modals.about.content')}
         <div className="block flex justify-center">
           <ul className="flex flex-row gap-x-4 mt-4">
             <li>
-              <a href="https://github.com/b310-digital/groupwriter/">
+              <a href="https://github.com/kitsteam/groupwriter">
                 {t('modals.about.linkSourceCode')}
               </a>
             </li>

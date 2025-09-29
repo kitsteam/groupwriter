@@ -108,7 +108,7 @@
         "title": "GroupWriter",
         "description": "Lass uns schreiben!",
         "buttons": {
-          "new": "Neues Dokument"
+          "new": "Text erstellen"
         },
         "recentTexts": {
           "title": "Letzte Texte:",

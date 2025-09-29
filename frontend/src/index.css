@@ -3,8 +3,8 @@
 
 @theme {
   --font-kits: "FiraSans", "sans-serif";
-  --color-primary: var(--color-blue-700);
-  --color-secondary: var(--color-blue-500);
+  --color-primary: rgb(0, 163, 211);
+  --color-secondary: rgb(0, 69, 111);
   --color-neutral: var(--color-gray);
 }
 
@@ -14,4 +14,23 @@ input {
 
 button {
   @apply border-2 border-neutral-200 rounded-md p-2 cursor-pointer;
+}
+
+@layer base {
+  @font-face {
+    font-family: FiraSans;
+    src: url("/fonts/firasans/FiraSans-Regular.otf") format("opentype")
+  }
+  
+  @font-face {
+    font-family: FiraSans;
+    font-weight: light;
+    src: url("/fonts/firasans/FiraSans-Light.otf") format("opentype")
+  }
+  
+  @font-face {
+    font-family: FiraSans;
+    font-weight: bold;
+    src: url("/fonts/firasans/FiraSans-Bold.otf") format("opentype")
+  }
 }
