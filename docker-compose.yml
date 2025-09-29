@@ -8,6 +8,8 @@ services:
     environment:
       BINDING: "0.0.0.0"
       VITE_HOCUSPOCUS_SERVER_URL: "http://localhost:5173/backend"
+      VITE_PRIVACY_STATEMENT_URL: "https://kits.blog/datenschutz/#groupwriter"
+      VITE_LEGAL_URL: "https://kits.blog/impressum/"
       TESTING_PLAYWRIGHT_WS_ENDPOINT: "ws://playwright:9323"
       TESTING_PLAYWRIGHT_BASE_URL: "http://editor:5173"
     ports:

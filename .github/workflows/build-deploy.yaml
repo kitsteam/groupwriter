@@ -27,6 +27,8 @@ jobs:
             dockerfile: ./frontend/Dockerfile
             build-args: |
               VITE_HOCUSPOCUS_SUBDOMAIN=write-backend
+              VITE_LEGAL_URL=https://kits.blog/impressum/
+              VITE_PRIVACY_STATEMENT_URL=https://kits.blog/datenschutz/#groupwriter
           - name: backend
             image: backend
             context: ./backend
