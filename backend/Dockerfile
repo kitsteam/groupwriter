@@ -14,7 +14,7 @@ FROM base AS production_builder
 ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 ENV DATABASE_URL=${DATABASE_URL}
 
-COPY --chown=node:node package.json package-lock.json tsconfig.json tsconfig.prod.json entrypoint.prod.sh  $APP_PATH/
+COPY --chown=node:node package.json package-lock.json tsconfig.json tsconfig.prod.json prisma.config.ts entrypoint.prod.sh  $APP_PATH/
 
 USER node
 
@@ -37,8 +37,9 @@ COPY --chown=node:node entrypoint.prod.sh package.json package-lock.json ./
 RUN npm ci
 
 COPY --from=production_builder --chown=node:node $APP_PATH/dist/ ./dist/
-COPY --from=production_builder --chown=node:node $APP_PATH/prisma/ ./prisma/
-COPY --from=production_builder --chown=node:node $APP_PATH/generated/ ./generated/
+# Move prisma related files to the dist folder to enable the deploy command
+COPY --from=production_builder --chown=node:node $APP_PATH/prisma/ ./dist/prisma/
+COPY --from=production_builder --chown=node:node $APP_PATH/prisma.config.ts ./dist/prisma.config.ts
 
 CMD ["./entrypoint.prod.sh"]
 
