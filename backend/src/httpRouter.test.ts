@@ -8,6 +8,7 @@ import {
   handleDeleteImageRequest,
   handleGetImageRequest,
   handleUploadImageRequest,
+  handleGetOwnDocumentsRequest,
 } from "./httpHandler";
 
 vi.mock("./httpHandler");
@@ -31,6 +32,16 @@ describe("httpRouter", () => {
 
     await expect(httpRouter(payload, null)).rejects.toThrow();
     expect(handleDeleteDocumentRequest).toHaveBeenCalled();
+  });
+
+  it("gets documents", async () => {
+    const payload = mock<onRequestPayload>();
+    payload.request.method = "GET";
+    payload.request.url = "/documents";
+    payload.request.headers = {};
+
+    await expect(httpRouter(payload, null)).rejects.toThrow();
+    expect(handleGetOwnDocumentsRequest).toHaveBeenCalled();
   });
 
   it("creates images", async () => {

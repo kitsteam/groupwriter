@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../generated/prisma/client";
 import { CronJob } from "cron";
 import { deleteOldDocuments } from "../model/document";
 
@@ -7,6 +7,7 @@ const SCHEDULE = "0 0 * * *";
 export const scheduleRemoveOldDocumentsCronJob = (prisma: PrismaClient) => {
   CronJob.from({
     cronTime: SCHEDULE,
+    timeZone: "UTC",
     onTick: async () => {
       console.log("Starting cronjob");
       if (process.env.FEATURE_REMOVE_DOCUMENTS_TOGGLE === "true") {

@@ -113,6 +113,10 @@
         "recentTexts": {
           "title": "Letzte Texte:",
           "item": "Text vom"
+        },
+        "ownedTexts": {
+          "title": "Eigene Texte:",
+          "item": "Text vom"
         }
       }
     },

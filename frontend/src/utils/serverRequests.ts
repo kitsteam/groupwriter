@@ -40,6 +40,27 @@ export const createDocument = async (): Promise<string | null> => {
   return null;
 };
 
+export const fetchOwnDocuments = async (): Promise<LocalDocument[]> => {
+  try {
+    const response = await fetch(`${serverUrl()}/documents`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status}`);
+    } else {
+      const documents = (await response.json()) as LocalDocument[];
+      return documents;
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
+  return [];
+}
+
 export const uploadImage = async (
   file: File,
   documentId: string,

@@ -10,6 +10,10 @@ WORKDIR $APP_PATH
 # Production build step for the application. We need to omit NODE_ENV=production here, because tsc is a development dependency
 FROM base AS production_builder
 
+# Default placeholder for Prisma schema validation (overridable via --build-arg)
+ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+ENV DATABASE_URL=${DATABASE_URL}
+
 COPY --chown=node:node package.json package-lock.json tsconfig.json tsconfig.prod.json entrypoint.prod.sh  $APP_PATH/
 
 USER node
@@ -34,8 +38,7 @@ RUN npm ci
 
 COPY --from=production_builder --chown=node:node $APP_PATH/dist/ ./dist/
 COPY --from=production_builder --chown=node:node $APP_PATH/prisma/ ./prisma/
-# needed for prisma to generate the client
-RUN npx prisma generate
+COPY --from=production_builder --chown=node:node $APP_PATH/generated/ ./generated/
 
 CMD ["./entrypoint.prod.sh"]
 

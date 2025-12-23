@@ -1,5 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-import { createDocument, deleteDocument } from "./model/document";
+import { PrismaClient } from "../generated/prisma/client";
+import {
+  createDocument,
+  deleteDocument,
+  getDocumentsByOwner,
+} from "./model/document";
 import { IncomingMessage, ServerResponse } from "http";
 import formidable from "formidable";
 import { createImage, deleteImage, getImage } from "./model/image";
@@ -12,19 +16,45 @@ import { Readable } from "stream";
 import { pipeline } from "stream/promises";
 import { deleteImageFromBucket } from "./utils/s3";
 
+const DEFAULT_MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024; // 1 MB default
+
 export const handleCreateDocumentRequest = async (
   response: ServerResponse<IncomingMessage>,
   prisma: PrismaClient,
+  personId: string | null,
 ): Promise<void> => {
   console.debug(`Creating new document`);
   // return a new document:
-  const document = await createDocument(prisma).catch((error: Error) => {
-    console.error(error);
-    throw error;
-  });
+  const document = await createDocument(prisma, personId).catch(
+    (error: Error) => {
+      console.error(error);
+      throw error;
+    },
+  );
 
   response.writeHead(200, { "Content-Type": "text/json" });
   response.end(JSON.stringify(document));
+};
+
+export const handleGetOwnDocumentsRequest = async (
+  response: ServerResponse<IncomingMessage>,
+  prisma: PrismaClient,
+  personId: string,
+): Promise<void> => {
+  if (!personId) {
+    response.writeHead(200, { "Content-Type": "text/json" });
+    response.end(JSON.stringify([]));
+    return;
+  }
+  console.debug(`Fetching documents for ownerExternalId=${personId}`);
+  const documents = await getDocumentsByOwner(prisma, personId).catch(
+    (error: Error) => {
+      console.error(error);
+      throw error;
+    },
+  );
+  response.writeHead(200, { "Content-Type": "text/json" });
+  response.end(JSON.stringify(documents));
 };
 
 export const handleDeleteDocumentRequest = async (
@@ -51,7 +81,11 @@ export const handleUploadImageRequest = async (
 ): Promise<void> => {
   await checkPermission(prisma, documentId, modificationSecret, response);
   try {
-    const form = formidable({ multiples: false });
+    const maxFileSize = process.env.UPLOAD_IMAGE_MAX_SIZE_BYTES
+      ? parseInt(process.env.UPLOAD_IMAGE_MAX_SIZE_BYTES, 10)
+      : DEFAULT_MAX_IMAGE_SIZE_BYTES;
+
+    const form = formidable({ multiples: false, maxFileSize });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_fields, files] = await form.parse(request);
     if (files["file"].length > 0) {
@@ -73,6 +107,14 @@ export const handleUploadImageRequest = async (
       }
     }
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("maxTotalFileSize")
+    ) {
+      response.writeHead(413, { "Content-Type": "text/json" });
+      response.end(JSON.stringify({ error: "File size exceeds maximum allowed size" }));
+      return;
+    }
     console.error(error);
     response.writeHead(500);
     response.end();

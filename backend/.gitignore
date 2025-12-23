@@ -3,6 +3,7 @@
 .DS_Store
 
 # Now whitelist:
+!prisma.config.ts
 !/tests/
 !/.github/
 !/prisma/
