@@ -1,30 +1,28 @@
-import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
+import type { Image } from "../../generated/prisma/client";
 
-export const buildExampleImage = (documentId: string) => {
+export const buildExampleImage = (
+  documentId: string,
+): Omit<Image, "id" | "createdAt" | "updatedAt"> => {
   return {
-    documentId: documentId,
+    documentId,
     name: "test.png",
     mimetype: "image/png",
   };
 };
 
-export const buildFullExampleImage = (documentId: string) => {
+export const buildFullExampleImage = (
+  documentId: string,
+  overrides: Partial<Image> = {},
+): Image => {
+  const now = new Date();
   return {
     id: randomUUID(),
-    documentId: documentId,
+    documentId,
     name: "test.png",
     mimetype: "image/png",
-    updatedAt: new Date(),
-    createdAt: new Date(),
+    updatedAt: now,
+    createdAt: now,
+    ...overrides,
   };
-};
-
-export const createExampleImage = async (
-  prisma: PrismaClient,
-  documentId: string,
-) => {
-  return prisma.image.create({
-    data: buildExampleImage(documentId),
-  });
 };

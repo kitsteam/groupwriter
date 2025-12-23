@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { PrismockClient } from "prismock";
 import {
   deleteOldDocuments,
   fetchDocument,
@@ -7,197 +6,320 @@ import {
   updateDocument,
   isValidModificationSecret,
   deleteDocument,
+  createDocument,
+  getDocumentsByOwner,
 } from "./document";
-import {
-  buildExampleDocument,
-  createExampleDocument,
-} from "../../tests/helpers/documentHelpers";
-import { createExampleImage } from "../../tests/helpers/imageHelpers";
+import { buildFullDocument } from "../../tests/helpers/documentHelpers";
+import { buildFullExampleImage } from "../../tests/helpers/imageHelpers";
 import { deleteImage } from "./image";
 import { deleteImageFromBucket } from "../utils/s3";
+import { prismaMock } from "../../tests/helpers/mockPrisma";
+import { randomUUID } from "crypto";
 
 vi.mock("./image");
 vi.mock("../utils/s3");
 
-const prisma = new PrismockClient();
-
 describe("deleteOldDocuments", () => {
   it("should delete old documents, but keep new documents", async () => {
-    const cutOffDays = 731;
-    const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - cutOffDays);
+    const oldDoc = buildFullDocument();
 
-    await createExampleDocument(prisma, oldDate);
-    const newDocument = await createExampleDocument(prisma);
+    prismaMock.document.findMany.mockResolvedValue([
+      { id: oldDoc.id },
+    ] as never);
+    prismaMock.image.findMany.mockResolvedValue([]);
+    prismaMock.document.delete.mockResolvedValue(oldDoc);
 
-    const beforeDocuments = await prisma.document.findMany();
-    expect(beforeDocuments.length).toEqual(2);
+    await deleteOldDocuments(prismaMock);
 
-    await deleteOldDocuments(prisma);
-
-    const afterDocuments = await prisma.document.findMany();
-
-    expect(afterDocuments.length).toEqual(1);
-    expect(afterDocuments[0].id).toEqual(newDocument.id);
+    expect(prismaMock.document.findMany).toHaveBeenCalledWith({
+      where: {
+        lastAccessedAt: { lt: expect.any(Date) as Date },
+      },
+      select: { id: true },
+    });
+    expect(prismaMock.document.delete).toHaveBeenCalledWith({
+      where: { id: oldDoc.id },
+    });
   });
 
   it("should delete linked images", async () => {
-    const cutOffDays = 731;
-    const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - cutOffDays);
+    const oldDoc = buildFullDocument();
+    const image = buildFullExampleImage(oldDoc.id);
 
-    const document = await createExampleDocument(prisma, oldDate);
-    const image = await createExampleImage(prisma, document.id);
+    prismaMock.document.findMany.mockResolvedValue([
+      { id: oldDoc.id },
+    ] as never);
+    prismaMock.image.findMany.mockResolvedValue([image]);
+    prismaMock.document.delete.mockResolvedValue(oldDoc);
     vi.mocked(deleteImage).mockResolvedValue(image);
     vi.mocked(deleteImageFromBucket).mockResolvedValue(null);
 
-    await deleteOldDocuments(prisma);
-    expect(deleteImage).toHaveBeenCalledWith(prisma, image.id);
+    await deleteOldDocuments(prismaMock);
+
+    expect(deleteImage).toHaveBeenCalledWith(prismaMock, image.id);
     expect(deleteImageFromBucket).toHaveBeenCalledWith(image.id);
   });
 });
 
 describe("deleteDocument", () => {
   it("should delete the document", async () => {
-    const newDocument = await createExampleDocument(prisma);
-    expect(
-      await deleteDocument(
-        prisma,
-        newDocument.id,
-        newDocument.modificationSecret,
-      ),
-    ).toBeTruthy();
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue({ id: doc.id } as never);
+    prismaMock.image.findMany.mockResolvedValue([]);
+    prismaMock.document.delete.mockResolvedValue(doc);
 
-    const afterDocument = await prisma.document.findFirst({
-      where: { id: newDocument.id },
+    const result = await deleteDocument(
+      prismaMock,
+      doc.id,
+      doc.modificationSecret,
+    );
+
+    expect(result).toBeTruthy();
+    expect(prismaMock.document.delete).toHaveBeenCalledWith({
+      where: { id: doc.id },
     });
-    expect(afterDocument).toEqual(null);
   });
 
   it("should delete linked images", async () => {
-    const newDocument = await createExampleDocument(prisma);
-    const image = await createExampleImage(prisma, newDocument.id);
+    const doc = buildFullDocument();
+    const image = buildFullExampleImage(doc.id);
+    prismaMock.document.findFirst.mockResolvedValue({ id: doc.id } as never);
+    prismaMock.image.findMany.mockResolvedValue([image]);
+    prismaMock.document.delete.mockResolvedValue(doc);
     vi.mocked(deleteImage).mockResolvedValue(image);
     vi.mocked(deleteImageFromBucket).mockResolvedValue(null);
-    expect(
-      await deleteDocument(
-        prisma,
-        newDocument.id,
-        newDocument.modificationSecret,
-      ),
-    ).toBeTruthy();
 
-    expect(deleteImage).toHaveBeenCalledWith(prisma, image.id);
+    const result = await deleteDocument(
+      prismaMock,
+      doc.id,
+      doc.modificationSecret,
+    );
+
+    expect(result).toBeTruthy();
+    expect(deleteImage).toHaveBeenCalledWith(prismaMock, image.id);
     expect(deleteImageFromBucket).toHaveBeenCalledWith(image.id);
   });
 
   it("should not delete the document if the id is missing", async () => {
-    const newDocument = await createExampleDocument(prisma);
-    expect(
-      await deleteDocument(prisma, "missing", newDocument.modificationSecret),
-    ).toBeFalsy();
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue(null);
 
-    const afterDocument = await prisma.document.findFirst({
-      where: { id: newDocument.id },
-    });
-    expect(afterDocument).toEqual(newDocument);
+    const result = await deleteDocument(
+      prismaMock,
+      "missing",
+      doc.modificationSecret,
+    );
+
+    expect(result).toBeFalsy();
+    expect(prismaMock.document.delete).not.toHaveBeenCalled();
   });
 
   it("should not delete the document if the modificationSecret is wrong", async () => {
-    const newDocument = await createExampleDocument(prisma);
-    expect(await deleteDocument(prisma, newDocument.id, "missing")).toBeFalsy();
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue(null);
 
-    const afterDocument = await prisma.document.findFirst({
-      where: { id: newDocument.id },
-    });
-    expect(afterDocument).toEqual(newDocument);
+    const result = await deleteDocument(prismaMock, doc.id, "wrong-secret");
+
+    expect(result).toBeFalsy();
+    expect(prismaMock.document.delete).not.toHaveBeenCalled();
   });
 });
 
 describe("updateLastAccessedAt", () => {
-  it("updates the lastAccesseAt value", async () => {
-    const document = await prisma.document.create({
-      data: buildExampleDocument(),
-    });
-    // wait a short moment before updating the date:
-    await new Promise((r) => setTimeout(r, 10));
-    await updateLastAccessedAt(prisma, document.id);
+  it("updates the lastAccessedAt value", async () => {
+    const doc = buildFullDocument();
+    const updatedDoc = { ...doc, lastAccessedAt: new Date() };
+    prismaMock.document.update.mockResolvedValue(updatedDoc);
 
-    const updatedDocument = await prisma.document.findFirst({
-      where: { id: document.id },
+    await updateLastAccessedAt(prismaMock, doc.id);
+
+    expect(prismaMock.document.update).toHaveBeenCalledWith({
+      where: { id: doc.id },
+      data: { lastAccessedAt: expect.any(Date) as Date },
     });
-    expect(updatedDocument.lastAccessedAt.valueOf()).toBeGreaterThan(
-      document.lastAccessedAt.valueOf(),
-    );
   });
 
   it("does not update the value for an invalid document id", async () => {
-    expect(await updateLastAccessedAt(prisma, "invalid")).toBeFalsy();
+    await updateLastAccessedAt(prismaMock, "invalid");
+
+    expect(prismaMock.document.update).not.toHaveBeenCalled();
   });
 });
 
 describe("fetchDocument", () => {
   it("accepts a valid uuidv4", async () => {
-    const document = await createExampleDocument(prisma);
-    expect((await fetchDocument(prisma, document.id)).id).toEqual(document.id);
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      data: doc.data,
+      modificationSecret: doc.modificationSecret,
+    } as never);
+
+    const result = await fetchDocument(prismaMock, doc.id);
+
+    expect(result?.id).toEqual(doc.id);
+    expect(prismaMock.document.findFirst).toHaveBeenCalledWith({
+      where: { id: doc.id },
+      select: { id: true, data: true, modificationSecret: true },
+    });
   });
 
   it("does not accept an invalid document id", async () => {
-    expect(await fetchDocument(prisma, "invalid")).toBeNull();
+    const result = await fetchDocument(prismaMock, "invalid");
+
+    expect(result).toBeNull();
+    expect(prismaMock.document.findFirst).not.toHaveBeenCalled();
   });
 
   it("returns null if the document does not exist", async () => {
-    await expect(
-      fetchDocument(prisma, crypto.randomUUID()),
-    ).resolves.toBeNull();
+    prismaMock.document.findFirst.mockResolvedValue(null);
+
+    const result = await fetchDocument(prismaMock, randomUUID());
+
+    expect(result).toBeNull();
   });
 });
 
 describe("isValidModificationSecret", () => {
   it("returns true for valid modificationSecret", async () => {
-    const document = await createExampleDocument(prisma);
-    expect(
-      await isValidModificationSecret(
-        prisma,
-        document.id,
-        document.modificationSecret,
-      ),
-    ).toBeTruthy();
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      data: doc.data,
+      modificationSecret: doc.modificationSecret,
+    } as never);
+
+    const result = await isValidModificationSecret(
+      prismaMock,
+      doc.id,
+      doc.modificationSecret,
+    );
+
+    expect(result).toBeTruthy();
   });
 
   it("returns false for invalid modificationSecret", async () => {
-    const document = await createExampleDocument(prisma);
-    expect(
-      await isValidModificationSecret(prisma, document.id, "invalid"),
-    ).toBeFalsy();
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      data: doc.data,
+      modificationSecret: doc.modificationSecret,
+    } as never);
+
+    const result = await isValidModificationSecret(
+      prismaMock,
+      doc.id,
+      "invalid",
+    );
+
+    expect(result).toBeFalsy();
   });
 
   it("does not accept an invalid document id", async () => {
-    expect(
-      await isValidModificationSecret(prisma, "invalid", "invalid"),
-    ).toBeFalsy();
+    const result = await isValidModificationSecret(
+      prismaMock,
+      "invalid",
+      "invalid",
+    );
+
+    expect(result).toBeFalsy();
+    expect(prismaMock.document.findFirst).not.toHaveBeenCalled();
   });
 });
 
 describe("updateDocument", () => {
   it("updates an existing document", async () => {
-    const document = await createExampleDocument(prisma);
+    const doc = buildFullDocument();
     const newData = new TextEncoder().encode("new");
-    expect(await updateDocument(prisma, document.id, newData)).toBeTruthy();
+    prismaMock.document.update.mockResolvedValue({ ...doc, data: newData });
+
+    const result = await updateDocument(prismaMock, doc.id, newData);
+
+    expect(result).toBeTruthy();
+    expect(prismaMock.document.update).toHaveBeenCalledWith({
+      where: { id: doc.id },
+      data: {
+        data: expect.any(Uint8Array) as Uint8Array,
+        updatedAt: expect.any(Date) as Date,
+        lastAccessedAt: expect.any(Date) as Date,
+      },
+    });
   });
 
   it("returns false when document does not exist", async () => {
-    const document = buildExampleDocument();
-    expect(
-      await updateDocument(
-        prisma,
-        "00000000-0000-0000-0000-000000000000",
-        document.data,
-      ),
-    ).toBeFalsy();
+    prismaMock.document.update.mockRejectedValue(new Error("Record not found"));
+
+    const result = await updateDocument(
+      prismaMock,
+      "00000000-0000-0000-0000-000000000000",
+      new Uint8Array(),
+    );
+
+    expect(result).toBeFalsy();
   });
 
   it("does not accept an invalid document id", async () => {
-    expect(await updateDocument(prisma, "invalid", undefined)).toBeFalsy();
+    const result = await updateDocument(prismaMock, "invalid", undefined);
+
+    expect(result).toBeFalsy();
+    expect(prismaMock.document.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("document ownership", () => {
+  describe("createDocument", () => {
+    it("assigns ownerExternalId when passed", async () => {
+      const doc = buildFullDocument({ ownerExternalId: "owner-123" });
+      prismaMock.document.create.mockResolvedValue(doc);
+
+      const result = await createDocument(prismaMock, "owner-123");
+
+      expect(result.ownerExternalId).toBe("owner-123");
+      expect(prismaMock.document.create).toHaveBeenCalledWith({
+        data: { ownerExternalId: "owner-123" },
+      });
+    });
+
+    it("sets ownerExternalId to null when null is passed", async () => {
+      const doc = buildFullDocument({ ownerExternalId: null });
+      prismaMock.document.create.mockResolvedValue(doc);
+
+      const result = await createDocument(prismaMock, null);
+
+      expect(result.ownerExternalId).toBeNull();
+    });
+  });
+
+  describe("getDocumentsByOwner", () => {
+    it("returns only documents with matching ownerExternalId in the correct order", async () => {
+      const ownerA = "owner-A";
+      const doc1 = buildFullDocument({ ownerExternalId: ownerA });
+      const doc2 = buildFullDocument({ ownerExternalId: ownerA });
+
+      prismaMock.document.findMany.mockResolvedValue([doc1, doc2]);
+
+      const docs = await getDocumentsByOwner(prismaMock, ownerA);
+
+      expect(docs.length).toBe(2);
+      expect(prismaMock.document.findMany).toHaveBeenCalledWith({
+        where: { ownerExternalId: ownerA },
+        orderBy: { createdAt: "desc" },
+      });
+    });
+
+    it("returns an empty list if owner has no documents", async () => {
+      prismaMock.document.findMany.mockResolvedValue([]);
+
+      const docs = await getDocumentsByOwner(prismaMock, "owner-234");
+
+      expect(docs).toEqual([]);
+    });
+
+    it("returns an empty list if ownerExternalId is null", async () => {
+      const docs = await getDocumentsByOwner(prismaMock, null);
+
+      expect(docs).toEqual([]);
+      expect(prismaMock.document.findMany).not.toHaveBeenCalled();
+    });
   });
 });

@@ -43,8 +43,7 @@ const CommentCard = ({
   useEffect(() => {
     const handleClick = () => {
       if (
-        comment &&
-        comment.text === null &&
+        comment?.text === null &&
         editor &&
         currentUser &&
         comment.user?.id === currentUser?.userId

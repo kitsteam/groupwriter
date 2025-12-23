@@ -1,7 +1,6 @@
 import { onRequestPayload, Server } from "@hocuspocus/server";
 import { Database } from "@hocuspocus/extension-database";
 import { Logger } from "@hocuspocus/extension-logger";
-import { PrismaClient } from "@prisma/client";
 import { scheduleRemoveOldDocumentsCronJob } from "./crons/remove_old_documents_cron";
 import {
   fetchDocument,
@@ -10,9 +9,14 @@ import {
 } from "./model/document";
 import { handleReadOnlyMode } from "./utils/hooks";
 import httpRouter from "./httpRouter";
-import * as Y from 'yjs';
+import * as Y from "yjs";
+import { PrismaClient } from "../generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 const server = new Server({
   port: parseInt(process.env.PORT, 10) || 3000,
@@ -31,15 +35,15 @@ const server = new Server({
     new Database({
       fetch: async ({ documentName }) => {
         console.debug(`Fetching ${documentName}`);
-        const data = (await fetchDocument(prisma, documentName))?.data
-        if(!data) {
-          const doc = new Y.Doc()
-          const sharedMap = doc.getMap('data')
-          sharedMap.set('editor', new Y.XmlFragment())
-          sharedMap.set('editorSecond', new Y.XmlFragment())
-          return Y.encodeStateAsUpdate(doc)
+        const data = (await fetchDocument(prisma, documentName))?.data;
+        if (!data) {
+          const doc = new Y.Doc();
+          const sharedMap = doc.getMap("data");
+          sharedMap.set("editor", new Y.XmlFragment());
+          sharedMap.set("editorSecond", new Y.XmlFragment());
+          return Y.encodeStateAsUpdate(doc);
         } else {
-          return data
+          return data;
         }
       },
       store: async ({ documentName, state }) => {
@@ -48,8 +52,8 @@ const server = new Server({
       },
     }),
   ],
-  onConnect: async ({ documentName }) => {
-    const result = await fetchDocument(prisma, documentName);
+  onConnect: async (context) => {
+    const result = await fetchDocument(prisma, context.documentName);
     if (!result) {
       throw new Error("Document not found!");
     }

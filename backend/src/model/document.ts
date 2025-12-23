@@ -1,11 +1,13 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { PrismaClient, Prisma } from "../../generated/prisma/client";
 import { deleteImage } from "./image";
 import { deleteImageFromBucket } from "../utils/s3";
 import { isValidUUID } from "../utils/validators";
 
-export const createDocument = async (prisma: PrismaClient) => {
-  return prisma.document.create({ data: {} });
+export const createDocument = async (
+  prisma: PrismaClient,
+  personId?: string | null,
+) => {
+  return prisma.document.create({ data: { ownerExternalId: personId } });
 };
 
 export const fetchDocument = async (
@@ -26,6 +28,21 @@ export const fetchDocument = async (
   });
 };
 
+export const getDocumentsByOwner = async (
+  prisma: PrismaClient,
+  ownerExternalId: string,
+) => {
+  if (!ownerExternalId) return [];
+  return prisma.document.findMany({
+    where: {
+      ownerExternalId: ownerExternalId,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+};
+
 export const updateDocument = async (
   prisma: PrismaClient,
   documentName: string,
@@ -37,7 +54,7 @@ export const updateDocument = async (
     await prisma.document.update({
       where: { id: documentName },
       data: {
-        data: state,
+        data: new Uint8Array(state),
         updatedAt: new Date(),
         lastAccessedAt: new Date(),
       },
@@ -47,7 +64,7 @@ export const updateDocument = async (
   } catch (error) {
     // P2025 is the error code for a document not found
     if (
-      error instanceof PrismaClientKnownRequestError &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2025"
     )
       return false;
@@ -109,7 +126,7 @@ export const deleteDocument = async (
   } catch (error) {
     // P2025 is the error code for a document not found
     if (
-      error instanceof PrismaClientKnownRequestError &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2025"
     )
       return false;

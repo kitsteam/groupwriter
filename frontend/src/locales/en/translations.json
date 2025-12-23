@@ -113,6 +113,10 @@
         "recentTexts": {
           "title": "Recent texts:",
           "item": "Text from"
+        },
+        "ownedTexts": {
+          "title": "Own texts:",
+          "item": "Text from"
         }
       }
     },

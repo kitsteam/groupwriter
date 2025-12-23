@@ -15,6 +15,7 @@ export default tseslint.config(
         projectService: {
           allowDefaultProject: ['*.js', '*.mjs'],
         },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         tsconfigRootDir: import.meta.dirname,
       },
     },

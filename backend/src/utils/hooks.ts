@@ -1,6 +1,6 @@
 import { ConnectionConfiguration } from "@hocuspocus/server";
 import { isValidModificationSecret } from "../model/document";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../generated/prisma/client";
 
 export const handleReadOnlyMode = async (
   prisma: PrismaClient,

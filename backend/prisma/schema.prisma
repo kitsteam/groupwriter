@@ -5,17 +5,19 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  engineType      = "client"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Document {
   id String @db.Uuid @unique @default(uuid())
   modificationSecret String @db.Uuid @unique @default(uuid())
+  ownerExternalId String?
   data Bytes? @db.ByteA
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())

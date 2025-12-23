@@ -28,6 +28,12 @@ jobs:
           cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
       
       - run: npm ci
+
+      - name: Generate prisma
+        if: contains(inputs.working-directory, 'backend')
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://test-placeholder:test-placeholder@localhost:5432/test-placeholder
       
       - name: Run tests
         run: npm test

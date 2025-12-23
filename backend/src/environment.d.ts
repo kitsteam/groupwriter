@@ -13,6 +13,7 @@ declare global {
       DATABASE_URL: string;
       FEATURE_REMOVE_DOCUMENTS_MAX_AGE_IN_DAYS: string;
       FEATURE_REMOVE_DOCUMENTS_TOGGLE: string;
+      UPLOAD_IMAGE_MAX_SIZE_BYTES?: string;
     }
   }
 }

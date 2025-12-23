@@ -1,16 +1,30 @@
-import { PrismaClient } from "@prisma/client";
+import { randomUUID } from "crypto";
+import type { Document } from "../../generated/prisma/client";
 
-export const buildExampleDocument = (lastAccessedAt?: Date) => {
+export const buildExampleDocument = (
+  lastAccessedAt?: Date,
+): Omit<Document, "id" | "modificationSecret" | "createdAt" | "updatedAt"> &
+  Partial<Document> => {
   const data = new TextEncoder().encode("example");
-  return { data: data, lastAccessedAt: lastAccessedAt };
+  return {
+    data,
+    lastAccessedAt: lastAccessedAt ?? new Date(),
+    ownerExternalId: null,
+  };
 };
 
-export const createExampleDocument = async (
-  prisma: PrismaClient,
-  lastAccessedAt?: Date,
-) => {
-  const document = buildExampleDocument(lastAccessedAt);
-  return prisma.document.create({
-    data: document,
-  });
+export const buildFullDocument = (
+  overrides: Partial<Document> = {},
+): Document => {
+  const now = new Date();
+  return {
+    id: randomUUID(),
+    modificationSecret: randomUUID(),
+    ownerExternalId: null,
+    data: new TextEncoder().encode("example"),
+    createdAt: now,
+    updatedAt: now,
+    lastAccessedAt: now,
+    ...overrides,
+  };
 };

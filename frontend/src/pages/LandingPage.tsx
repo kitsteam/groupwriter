@@ -1,18 +1,30 @@
-import { createDocument } from '../utils/serverRequests';
+import { createDocument, fetchOwnDocuments } from '../utils/serverRequests';
 import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import './landingPageStyles.scss';
-import { getLocalMostRecentThreeDocuments } from '../utils/localstorage';
+import { getLocalMostRecentThreeDocuments, LocalDocument } from '../utils/localstorage';
+import { useState, useEffect } from 'react';
 
 function LandingPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
   const sortedDocuments = getLocalMostRecentThreeDocuments();
+  const [ownDocuments, setOwnDocuments] = useState<LocalDocument[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const result = await fetchOwnDocuments();
+      setOwnDocuments(result.slice(0, 3));
+    }
+    load().catch(() => {
+      console.error('Failed to load own documents');
+    });
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen w-screen background">
-      <div className="flex flex-col items-center bg-white rounded-lg p-4 w-80 h-96 lg:w-96 landing-box">
+      <div className="flex flex-col items-center bg-white rounded-lg p-4 w-80 min-h-96 lg:w-96 landing-box">
         <h1 className="text-4xl font-bold text-center mt-8 mb-4 text-neutral-700">
           {t('page.landing.title')}
         </h1>
@@ -54,6 +66,31 @@ function LandingPage() {
             </li>
           ))}
           {Object.values(sortedDocuments).length === 0 && (
+            <li className="text-sm">-</li>
+          )}
+        </ul>
+        <div className="text-neutral-700 mt-4 ">
+          {t('page.landing.ownedTexts.title')}
+        </div>
+        <ul className="list-none text-secondary">
+          {Object.values(ownDocuments).map((document) => (
+            <li key={document.id} className="text-sm">
+              <Link
+                to={{
+                  pathname: `/document/${document.id}`,
+                  hash: document.modificationSecret
+                }}
+              >
+                {document?.createdAt && (
+                  <span>
+                    {t('page.landing.ownedTexts.item')}{' '}
+                    {new Date(document?.createdAt).toLocaleString()}
+                  </span>
+                )}
+              </Link>
+            </li>
+          ))}
+          {Object.values(ownDocuments).length === 0 && (
             <li className="text-sm">-</li>
           )}
         </ul>

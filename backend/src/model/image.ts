@@ -1,6 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-import type { Image } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { PrismaClient, Prisma } from "../../generated/prisma/client";
+import type { Image } from "../../generated/prisma/client";
 import { isValidUUID } from "../utils/validators";
 
 export const createImage = async (
@@ -44,7 +43,7 @@ export const getImage = async (
   } catch (error) {
     // P2025 is the error code for a id not found
     if (
-      error instanceof PrismaClientKnownRequestError &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2025"
     ) {
       return null;
@@ -67,7 +66,7 @@ export const deleteImage = async (
   } catch (error) {
     // P2025 is the error code for a id not found
     if (
-      error instanceof PrismaClientKnownRequestError &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2025"
     ) {
       return null;

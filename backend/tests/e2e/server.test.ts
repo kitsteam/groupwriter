@@ -8,15 +8,15 @@ import {
 } from "../helpers/hocuspocusHelpers";
 import { Database } from "@hocuspocus/extension-database";
 import { handleReadOnlyMode } from "../../src/utils/hooks";
-import { PrismockClient } from "prismock";
-import { createDocument } from "../../src/model/document";
 import httpRouter from "../../src/httpRouter";
 import { onRequestPayload } from "@hocuspocus/server";
-import { Document } from "@prisma/client";
+import { Document } from "../../generated/prisma/client";
 import {
   proseMirrorJson,
   proseMirrorYencodedStateUpdate,
 } from "../helpers/e2eTestData";
+import { prismaMock } from "../helpers/mockPrisma";
+import { buildFullDocument } from "../helpers/documentHelpers";
 
 describe("server", () => {
   it("should load a yjs document from the server", async () => {
@@ -71,12 +71,21 @@ describe("server", () => {
   });
 
   it("sets the readOnly flag to false when the correct modification secret is provided", async () => {
-    const prisma = new PrismockClient();
-    const newDocument = await createDocument(prisma);
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      data: doc.data,
+      modificationSecret: doc.modificationSecret,
+    } as never);
 
     const hocuspocus = await newHocuspocus({
       onAuthenticate: async ({ documentName, connectionConfig, token }) => {
-        await handleReadOnlyMode(prisma, documentName, connectionConfig, token);
+        await handleReadOnlyMode(
+          prismaMock,
+          documentName,
+          connectionConfig,
+          token,
+        );
       },
       onLoadDocument: async ({ connectionConfig }) => {
         expect(connectionConfig.readOnly).toBe(false);
@@ -86,8 +95,8 @@ describe("server", () => {
     await new Promise<HocuspocusProvider>((resolve) => {
       const p = newHocuspocusProvider(hocuspocus, {
         document: new Y.Doc(),
-        token: newDocument.modificationSecret,
-        name: newDocument.id,
+        token: doc.modificationSecret,
+        name: doc.id,
         onSynced: () => {
           resolve(p);
         },
@@ -97,12 +106,21 @@ describe("server", () => {
   });
 
   it("sets the readOnly flag to true when the incorrect modification secret is provided", async () => {
-    const prisma = new PrismockClient();
-    const newDocument = await createDocument(prisma);
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      data: doc.data,
+      modificationSecret: doc.modificationSecret,
+    } as never);
 
     const hocuspocus = await newHocuspocus({
       onAuthenticate: async ({ documentName, connectionConfig, token }) => {
-        await handleReadOnlyMode(prisma, documentName, connectionConfig, token);
+        await handleReadOnlyMode(
+          prismaMock,
+          documentName,
+          connectionConfig,
+          token,
+        );
       },
       onLoadDocument: async ({ connectionConfig }) => {
         expect(connectionConfig.readOnly).toBe(true);
@@ -113,7 +131,7 @@ describe("server", () => {
       const p = newHocuspocusProvider(hocuspocus, {
         document: new Y.Doc(),
         token: "wrong-token",
-        name: newDocument.id,
+        name: doc.id,
         onSynced: () => {
           resolve(p);
         },
@@ -124,10 +142,12 @@ describe("server", () => {
 
   // tests if the extensions are loaded
   it("POST /documents", async () => {
-    const prisma = new PrismockClient();
+    const doc = buildFullDocument();
+    prismaMock.document.create.mockResolvedValue(doc);
+
     const hocuspocus = await newHocuspocus({
       onRequest: async (data: onRequestPayload) => {
-        await httpRouter(data, prisma);
+        await httpRouter(data, prismaMock);
       },
     });
     const response = await fetch(`${hocuspocus.server.httpURL}/documents`, {
