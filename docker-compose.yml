@@ -30,7 +30,7 @@ services:
     tty: true
     stdin_open: true
     environment:
-      DATABASE_URL: postgresql://groupwriter-user:groupwriter-password@postgres/groupwriter-backend-dev
+      DATABASE_URL: postgresql://groupwriter-user:groupwriter-password@postgres/groupwriter-backend-dev?schema=group-writer
       PORT: 3000
       OBJECT_STORAGE_BUCKET: groupwriter
       OBJECT_STORAGE_SCHEME: "http://"
