@@ -12,6 +12,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["group-writer"]
 }
 
 model Document {
@@ -25,6 +26,7 @@ model Document {
   images Image[]
 
   @@index([id])
+  @@schema("group-writer")
 }
 
 model Image {
@@ -37,4 +39,5 @@ model Image {
   updatedAt DateTime @default(now())
 
   @@index([id])
+  @@schema("group-writer")
 }
