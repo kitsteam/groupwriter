@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "public"."Document" ADD COLUMN     "ownerExternalId" TEXT;
+ALTER TABLE "Document" ADD COLUMN "ownerExternalId" TEXT;
