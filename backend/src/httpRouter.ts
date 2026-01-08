@@ -5,6 +5,7 @@ import {
   handleGetImageRequest,
   handleUploadImageRequest,
   handleGetOwnDocumentsRequest,
+  handleHealthRequest,
 } from "./httpHandler";
 import { PrismaClient } from "../generated/prisma/client";
 import { onRequestPayload } from "@hocuspocus/server";
@@ -24,6 +25,13 @@ const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
   const resourceId = splittedUrl.length > 2 ? splittedUrl[2] : null;
   const modificationSecret = request.headers.authorization;
   const personId = extractPersonIdFromCookies(request.headers.cookie);
+
+  // health check response
+  if (method === "GET" && !resource) {
+    handleHealthRequest(response);
+    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+    return Promise.reject();
+  }
 
   if (method === "POST" && resource === "documents" && !subResource) {
     await handleCreateDocumentRequest(response, prisma, personId);
