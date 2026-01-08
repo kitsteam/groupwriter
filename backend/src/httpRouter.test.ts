@@ -9,11 +9,22 @@ import {
   handleGetImageRequest,
   handleUploadImageRequest,
   handleGetOwnDocumentsRequest,
+  handleHealthRequest,
 } from "./httpHandler";
 
 vi.mock("./httpHandler");
 
 describe("httpRouter", () => {
+  it("responds with OK to health check", async () => {
+    const payload = mock<onRequestPayload>();
+    payload.request.method = "GET";
+    payload.request.url = "/";
+    payload.request.headers = {};
+
+    await expect(httpRouter(payload, null)).rejects.toThrow();
+    expect(handleHealthRequest).toHaveBeenCalled();
+  });
+
   it("posts documents", async () => {
     const payload = mock<onRequestPayload>();
     payload.request.method = "POST";

@@ -8,6 +8,7 @@ import {
   handleGetImageRequest,
   handleUploadImageRequest,
   handleGetOwnDocumentsRequest,
+  handleHealthRequest,
 } from "./httpHandler";
 import { Document } from "../generated/prisma/client";
 import { downloadEncryptedImage } from "./utils/uploaderDownloader";
@@ -43,6 +44,15 @@ vi.mock("formidable", () => ({
     };
   },
 }));
+
+describe("handleHealthRequest", () => {
+  it("responds with OK to health check", () => {
+    const response = mock<ServerResponse<IncomingMessage>>();
+    handleHealthRequest(response);
+    const result = response.end.mock.calls[0][0] as string;
+    expect(result).toEqual("OK");
+  });
+});
 
 describe("handleCreateDocumentRequest", () => {
   it("creates a document without owner", async () => {

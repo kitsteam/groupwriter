@@ -18,6 +18,13 @@ import { deleteImageFromBucket } from "./utils/s3";
 
 const DEFAULT_MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024; // 1 MB default
 
+export const handleHealthRequest = (
+  response: ServerResponse<IncomingMessage>,
+): void => {
+  response.writeHead(200, { "Content-Type": "text/plain" });
+  response.end("OK");
+};
+
 export const handleCreateDocumentRequest = async (
   response: ServerResponse<IncomingMessage>,
   prisma: PrismaClient,
@@ -107,12 +114,11 @@ export const handleUploadImageRequest = async (
       }
     }
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.includes("maxTotalFileSize")
-    ) {
+    if (error instanceof Error && error.message.includes("maxTotalFileSize")) {
       response.writeHead(413, { "Content-Type": "text/json" });
-      response.end(JSON.stringify({ error: "File size exceeds maximum allowed size" }));
+      response.end(
+        JSON.stringify({ error: "File size exceeds maximum allowed size" }),
+      );
       return;
     }
     console.error(error);
