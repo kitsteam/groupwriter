@@ -17,6 +17,7 @@ import { prismaMock } from "../../tests/helpers/mockPrisma";
 import { randomUUID } from "crypto";
 
 vi.mock("./image");
+
 vi.mock("../utils/s3");
 
 describe("deleteOldDocuments", () => {
@@ -56,8 +57,8 @@ describe("deleteOldDocuments", () => {
 
     await deleteOldDocuments(prismaMock);
 
-    expect(deleteImage).toHaveBeenCalledWith(prismaMock, image.id);
     expect(deleteImageFromBucket).toHaveBeenCalledWith(image.id);
+    expect(deleteImage).toHaveBeenCalledWith(prismaMock, image.id);
   });
 });
 
@@ -96,8 +97,8 @@ describe("deleteDocument", () => {
     );
 
     expect(result).toBeTruthy();
-    expect(deleteImage).toHaveBeenCalledWith(prismaMock, image.id);
     expect(deleteImageFromBucket).toHaveBeenCalledWith(image.id);
+    expect(deleteImage).toHaveBeenCalledWith(prismaMock, image.id);
   });
 
   it("should not delete the document if the id is missing", async () => {

@@ -26,6 +26,7 @@ interface MockImageDelegate {
   findMany: MockFn<Image[]>;
   create: MockFn<Image>;
   delete: MockFn<Image>;
+  deleteMany: MockFn<{ count: number }>;
 }
 
 // Combined mock client interface
@@ -49,6 +50,7 @@ export const prismaMock = {
     findMany: vi.fn(),
     create: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
   },
 } as MockPrismaClientType & PrismaClient;
 
