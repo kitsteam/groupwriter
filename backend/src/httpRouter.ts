@@ -91,23 +91,22 @@ const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
 };
 
 function extractPersonIdFromCookies(cookies?: string): string | null {
-  if (!cookies) {
+  const secret = process.env.JWT_SECRET;
+  if (!cookies || !secret) {
     return null;
   }
   const parsedCookies = parse(cookies);
-  let personId = parsedCookies["person_id"];
-  const secret = process.env.JWT_SECRET;
+  const personId = parsedCookies["person_id"];
 
   try {
     const decoded = jwt.verify(personId, secret, {
       algorithms: ["HS256"],
     }) as { pid: string };
-    personId = decoded.pid;
+    return decoded.pid;
   } catch {
     console.error("JWT verification failed for person_id cookie");
     return null;
   }
-  return personId || null;
 }
 
 export default httpRouter;

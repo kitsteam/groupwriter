@@ -11,6 +11,7 @@ import {
   handleGetOwnDocumentsRequest,
   handleHealthRequest,
 } from "./httpHandler";
+import jwt from "jsonwebtoken";
 
 vi.mock("./httpHandler");
 
@@ -53,6 +54,25 @@ describe("httpRouter", () => {
 
     await expect(httpRouter(payload, null)).rejects.toThrow();
     expect(handleGetOwnDocumentsRequest).toHaveBeenCalled();
+  });
+
+  it("gets documents with person id", async () => {
+    vi.stubEnv("JWT_SECRET", "test");
+    const payload = mock<onRequestPayload>();
+    const secret = jwt.sign({ pid: "12345" }, "test", {
+      algorithm: "HS256",
+    });
+    payload.request.method = "GET";
+    payload.request.url = "/documents";
+    payload.request.headers = { cookie: `person_id=${secret}` };
+
+    await expect(httpRouter(payload, null)).rejects.toThrow();
+    expect(handleGetOwnDocumentsRequest).toHaveBeenCalledWith(
+      expect.anything(),
+      null,
+      "12345",
+    );
+    vi.unstubAllEnvs();
   });
 
   it("creates images", async () => {

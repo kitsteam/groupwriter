@@ -184,10 +184,14 @@ const deleteDocumentWithImages = async (
       documentId: documentId,
     },
   });
+
+  // Per-image: bucket first, then DB. If bucket fails, the DB record
+  // remains as a reference. If DB fails (e.g. already deleted by a
+  // concurrent request), deleteImage handles P2025 gracefully.
   await Promise.all(
-    images.map((image) => {
-      // Delete images from database and from bucket
-      return deleteImageAndBucketFile(prisma, image.id);
+    images.map(async (image) => {
+      await deleteImageFromBucket(image.id);
+      await deleteImage(prisma, image.id);
     }),
   );
 
@@ -198,10 +202,3 @@ const deleteDocumentWithImages = async (
   });
 };
 
-const deleteImageAndBucketFile = async (
-  prisma: PrismaClient,
-  imageId: string,
-): Promise<void> => {
-  await deleteImage(prisma, imageId);
-  await deleteImageFromBucket(imageId);
-};

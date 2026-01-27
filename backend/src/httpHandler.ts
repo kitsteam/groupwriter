@@ -141,7 +141,14 @@ export const handleGetImageRequest = async (
       "Content-Type": getImageResult.mimetype,
       "Content-Disposition": "inline; filename=" + getImageResult.name,
     });
-    await pipeline(Readable.from(downloadedImage), response);
+    try {
+      await pipeline(Readable.from(downloadedImage), response);
+    } catch (error) {
+      if (error instanceof Error && (error as NodeJS.ErrnoException).code === "ERR_STREAM_PREMATURE_CLOSE") {
+        return;
+      }
+      throw error;
+    }
   } else {
     response.writeHead(404);
   }
@@ -162,11 +169,12 @@ export const handleDeleteImageRequest = async (
     modificationSecret,
     response,
   );
-  const deletedImageResult = await deleteImage(prisma, imageId);
-  const result = deletedImageResult
-    ? await deleteImageFromBucket(imageId)
+  // Delete bucket file first so DB record remains as reference if this fails
+  const bucketResult = image ? await deleteImageFromBucket(imageId) : null;
+  const deletedImageResult = bucketResult
+    ? await deleteImage(prisma, imageId)
     : null;
-  if (deletedImageResult && result) {
+  if (bucketResult && deletedImageResult) {
     response.writeHead(204);
   } else {
     response.writeHead(404);

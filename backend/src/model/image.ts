@@ -37,7 +37,7 @@ export const getImage = async (
   if (!imageId || !isValidUUID(imageId)) return null;
 
   try {
-    return prisma.image.findUnique({
+    return await prisma.image.findUnique({
       where: { id: imageId },
     });
   } catch (error) {
@@ -60,7 +60,7 @@ export const deleteImage = async (
   if (!imageId || !isValidUUID(imageId)) return null;
 
   try {
-    return prisma.image.delete({
+    return await prisma.image.delete({
       where: { id: imageId },
     });
   } catch (error) {
