@@ -1,7 +1,6 @@
 import React, {
   ReactElement,
   useCallback,
-  useContext,
   useEffect,
   useState
 } from 'react';
@@ -11,7 +10,6 @@ import {
 } from '@packages/tiptap-extension-comment-collaboration';
 import { Editor } from '@tiptap/core';
 import CommentCard from './CommentCard';
-import { UserContext } from '../contexts/UserContext';
 
 interface CommentCardMargins {
   absoluteTop: number;
@@ -25,14 +23,17 @@ const EditorComments = ({
   comments,
   markPos,
   editor,
-  activatedComment
+  activatedComment,
+  localEditingIds,
+  removeLocalEditingId
 }: {
   comments: Record<string, CommentItem>;
   markPos: Record<string, MarkWithPos>;
   editor: Editor | null;
   activatedComment: string | null;
+  localEditingIds: Set<string>;
+  removeLocalEditingId: (id: string) => void;
 }) => {
-  const { currentUser } = useContext(UserContext);
   const [lastClickedCommentId, setLastClickedCommentId] = useState<
     string | null
   >(null);
@@ -42,14 +43,13 @@ const EditorComments = ({
     if (!comments) return;
 
     const toBeEditedComments = Object.values(comments).filter(
-      (comment) =>
-        comment?.text === null && currentUser?.userId === comment?.user?.id
+      (comment) => comment && localEditingIds.has(comment.commentId)
     );
 
     if (toBeEditedComments.length > 0) {
       setLastClickedCommentId(toBeEditedComments[0].commentId);
     }
-  }, [comments, currentUser]);
+  }, [comments, localEditingIds]);
 
   const calculateMargins = useCallback(
     (
@@ -95,9 +95,8 @@ const EditorComments = ({
           key={key}
           absoluteTop={absoluteTop}
           setLastClickedCommentId={setLastClickedCommentId}
-          toBeEdited={
-            comment.text === null && currentUser?.userId === comment.user.id
-          }
+          toBeEdited={localEditingIds.has(key)}
+          removeLocalEditingId={removeLocalEditingId}
           isLastClicked={lastClickedCommentId === key}
           activated={activatedComment === key}
         />

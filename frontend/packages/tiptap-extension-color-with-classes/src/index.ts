@@ -1,5 +1,5 @@
-import { ColorWithClasses } from './color'
+import { ColorWithClasses } from './color';
 
-export * from './color'
+export * from './color';
 
-export default ColorWithClasses
+export default ColorWithClasses;

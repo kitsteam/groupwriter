@@ -3,7 +3,6 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
-
 export default tseslint.config(
   eslint.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
@@ -13,11 +12,11 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js', '*.mjs'],
+          allowDefaultProject: ['*.js', '*.mjs']
         },
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  },
+        tsconfigRootDir: import.meta.dirname
+      }
+    }
+  }
 );

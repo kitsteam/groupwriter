@@ -11,12 +11,16 @@ import { PrismaClient } from "../generated/prisma/client";
 import { onRequestPayload } from "@hocuspocus/server";
 import jwt from "jsonwebtoken";
 import { parse } from "cookie";
+import { checkRateLimit } from "./utils/rateLimiter";
 
 /*
   This very basic router is used to handle the http requests to the server.
   The reject pattern is used as it is needed for hocuspocus control flow.
 */
-const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
+const routeRequest = async (
+  data: onRequestPayload,
+  prisma: PrismaClient,
+): Promise<void> => {
   const { request, response } = data;
   const method = request.method;
   const splittedUrl = request.url?.split("/");
@@ -29,20 +33,17 @@ const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
   // health check response
   if (method === "GET" && !resource) {
     handleHealthRequest(response);
-    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-    return Promise.reject();
+    return;
   }
 
   if (method === "POST" && resource === "documents" && !subResource) {
     await handleCreateDocumentRequest(response, prisma, personId);
-    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-    return Promise.reject();
+    return;
   }
 
   if (method === "GET" && resource === "documents" && !subResource) {
     await handleGetOwnDocumentsRequest(response, prisma, personId);
-    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-    return Promise.reject();
+    return;
   }
 
   if (method === "DELETE" && resource === "documents" && !subResource) {
@@ -52,8 +53,7 @@ const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
       response,
       prisma,
     );
-    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-    return Promise.reject();
+    return;
   }
 
   if (
@@ -61,6 +61,9 @@ const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
     resource === "documents" &&
     subResource === "images"
   ) {
+    if (!checkRateLimit(request, response)) {
+      return;
+    }
     await handleUploadImageRequest(
       resourceId,
       modificationSecret,
@@ -68,14 +71,12 @@ const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
       response,
       prisma,
     );
-    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-    return Promise.reject();
+    return;
   }
 
   if (method === "GET" && resource === "images") {
     await handleGetImageRequest(resourceId, response, prisma);
-    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-    return Promise.reject();
+    return;
   }
 
   if (method === "DELETE" && resource === "images") {
@@ -85,9 +86,22 @@ const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
       response,
       prisma,
     );
-    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-    return Promise.reject();
+    return;
   }
+};
+
+const httpRouter = async (data: onRequestPayload, prisma: PrismaClient) => {
+  try {
+    await routeRequest(data, prisma);
+  } catch (error) {
+    console.error("Unhandled error in HTTP router:", error);
+    if (!data.response.headersSent) {
+      data.response.writeHead(500, { "Content-Type": "text/json" });
+      data.response.end(JSON.stringify({ error: "Internal server error" }));
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+  return Promise.reject();
 };
 
 function extractPersonIdFromCookies(cookies?: string): string | null {

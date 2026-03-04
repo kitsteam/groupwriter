@@ -59,7 +59,7 @@ export const fetchOwnDocuments = async (): Promise<LocalDocument[]> => {
     console.error('Error fetching data:', error);
   }
   return [];
-}
+};
 
 export const uploadImage = async (
   file: File,

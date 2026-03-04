@@ -1,6 +1,13 @@
-import { Editor } from "@tiptap/core";
-import { CommentItem, CommentOptions, CommentStorage, CommentType, CommentUser, MarkWithPos } from "./types.js";
-import { DEFAULT_COMMENT_OPTIONS } from "./constants.js";
+import { Editor } from '@tiptap/core';
+import {
+  CommentItem,
+  CommentOptions,
+  CommentStorage,
+  CommentType,
+  CommentUser,
+  MarkWithPos
+} from './types.js';
+import { DEFAULT_COMMENT_OPTIONS } from './constants.js';
 
 export const debounce = <T extends unknown[]>(
   fn: (...args: T) => void,
@@ -15,7 +22,12 @@ export const debounce = <T extends unknown[]>(
   };
 };
 
-export const createReply = (commentId: string, parentId: string, user: CommentUser, text: string | null): CommentItem => {
+export const createReply = (
+  commentId: string,
+  parentId: string,
+  user: CommentUser,
+  text: string | null
+): CommentItem => {
   return {
     commentType: 'comment-reply',
     commentId: commentId,
@@ -28,23 +40,29 @@ export const createReply = (commentId: string, parentId: string, user: CommentUs
     createdAt: Date.now(),
     updatedBy: null,
     updatedAt: Date.now()
-  }
+  };
 };
 
-export const createComment = (commentId: string, commentType: CommentType | undefined, user: CommentUser, text: string | null, colorClass: string | null): CommentItem => {
-return {
-  ...DEFAULT_COMMENT_OPTIONS,
-  ...{
-    commentId: commentId,
-    commentType: commentType ?? 'comment',
-    text: text === undefined ? null : text,
-    colorClass: colorClass,
-    user: user,
-    createdAt: Date.now(),
-    updatedBy: null,
-    updatedAt: Date.now()
-  }
-}
+export const createComment = (
+  commentId: string,
+  commentType: CommentType | undefined,
+  user: CommentUser,
+  text: string | null,
+  colorClass: string | null
+): CommentItem => {
+  return {
+    ...DEFAULT_COMMENT_OPTIONS,
+    ...{
+      commentId: commentId,
+      commentType: commentType ?? 'comment',
+      text: text === undefined ? null : text,
+      colorClass: colorClass,
+      user: user,
+      createdAt: Date.now(),
+      updatedBy: null,
+      updatedAt: Date.now()
+    }
+  };
 };
 
 /**
@@ -77,7 +95,7 @@ export const updateCommentsPos = (
   _storage: CommentStorage,
   options: CommentOptions
 ) => {
-  if(editor.isDestroyed) return;
+  if (editor.isDestroyed) return;
 
   const marks: Record<string, MarkWithPos> = {};
   editor.state.doc.descendants((node, pos) => {

@@ -1,14 +1,14 @@
-import '@tiptap/extension-text-style'
+import '@tiptap/extension-text-style';
 
-import { Extension } from '@tiptap/core'
+import { Extension } from '@tiptap/core';
 
 export interface ColorWithClassesOptions {
   /**
    * The types where the color can be applied
    * @default ['textStyle']
    * @example ['heading', 'paragraph']
-  */
-  types: string[],
+   */
+  types: string[];
 }
 
 declare module '@tiptap/core' {
@@ -19,14 +19,14 @@ declare module '@tiptap/core' {
        * @param colorClass The color to set
        * @example editor.commands.setColor('red')
        */
-      setColor: (colorClass: string) => ReturnType,
+      setColor: (colorClass: string) => ReturnType;
 
       /**
        * Unset the text color
        * @example editor.commands.unsetColor()
        */
-      unsetColor: () => ReturnType,
-    }
+      unsetColor: () => ReturnType;
+    };
   }
 }
 
@@ -39,8 +39,8 @@ export const ColorWithClasses = Extension.create<ColorWithClassesOptions>({
 
   addOptions() {
     return {
-      types: ['textStyle'],
-    }
+      types: ['textStyle']
+    };
   },
 
   addGlobalAttributes() {
@@ -50,34 +50,36 @@ export const ColorWithClasses = Extension.create<ColorWithClassesOptions>({
         attributes: {
           colorClass: {
             default: null,
-            renderHTML: attributes => {
+            renderHTML: (attributes) => {
               if (!attributes.colorClass) {
-                return {}
+                return {};
               }
 
               return {
-                class: `${attributes.colorClass}`,
-              }
-            },
-          },
-        },
-      },
-    ]
+                class: `${attributes.colorClass}`
+              };
+            }
+          }
+        }
+      }
+    ];
   },
 
   addCommands() {
     return {
-      setColor: colorClass => ({ chain }) => {
-        return chain()
-          .setMark('textStyle', { colorClass })
-          .run()
-      },
-      unsetColor: () => ({ chain }) => {
-        return chain()
-          .setMark('textStyle', { colorClass: null })
-          .removeEmptyTextStyle()
-          .run()
-      },
-    }
-  },
-})
+      setColor:
+        (colorClass) =>
+        ({ chain }) => {
+          return chain().setMark('textStyle', { colorClass }).run();
+        },
+      unsetColor:
+        () =>
+        ({ chain }) => {
+          return chain()
+            .setMark('textStyle', { colorClass: null })
+            .removeEmptyTextStyle()
+            .run();
+        }
+    };
+  }
+});
