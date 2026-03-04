@@ -1,8 +1,17 @@
 import { Mark } from '@tiptap/core';
 import { v4 as uuidv4 } from 'uuid';
 import { Plugin } from '@tiptap/pm/state';
-import { CommentItem, CommentOptions, CommentStorage, CommentUser } from './types.js';
-import { createComment, createReply, debouncedUpdateCommentsPos } from './utils.js';
+import {
+  CommentItem,
+  CommentOptions,
+  CommentStorage,
+  CommentUser
+} from './types.js';
+import {
+  createComment,
+  createReply,
+  debouncedUpdateCommentsPos
+} from './utils.js';
 import { DEFAULT_COLOR_CLASS, Y_MAP_COMMENT_KEY } from './constants.js';
 
 /**
@@ -24,9 +33,7 @@ declare module '@tiptap/core' {
       /**
        * Accepts a proposal from a comment
        */
-      commentAcceptProposal: (attributes: {
-        commentId: string;
-      }) => ReturnType;
+      commentAcceptProposal: (attributes: { commentId: string }) => ReturnType;
       /**
        * Add a reply to a comment
        */
@@ -124,15 +131,21 @@ export const CollaborationCommentsExtension = Mark.create<
         parseHTML: (el) =>
           (el as HTMLSpanElement).getAttribute('data-comment-id'),
         renderHTML: (attrs) => ({
-          'data-comment-id': typeof(attrs.commentId) === 'string' ? attrs.commentId : ''
+          'data-comment-id':
+            typeof attrs.commentId === 'string' ? attrs.commentId : ''
         })
       },
       colorClass: {
         default: this.options.defaultColorClass,
-        parseHTML: (el) => (el as HTMLSpanElement).getAttribute('data-color-class'),
+        parseHTML: (el) =>
+          (el as HTMLSpanElement).getAttribute('data-color-class'),
         renderHTML: (attrs) => {
-          const colorClass = typeof(attrs.colorClass) === 'string' ? attrs.colorClass : '';
-          return { 'data-color-class': colorClass, class: `${colorClass} text-inherit` }
+          const colorClass =
+            typeof attrs.colorClass === 'string' ? attrs.colorClass : '';
+          return {
+            'data-color-class': colorClass,
+            class: `${colorClass} text-inherit`
+          };
         }
       }
     };
@@ -151,15 +164,21 @@ export const CollaborationCommentsExtension = Mark.create<
   },
 
   renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, unknown> }) {
-    const colorClass = typeof(HTMLAttributes['data-color-class']) === 'string' ? HTMLAttributes['data-color-class'] : '';
-    const commentId = typeof(HTMLAttributes['data-comment-id']) === 'string' ? HTMLAttributes['data-comment-id'] : '';
+    const colorClass =
+      typeof HTMLAttributes['data-color-class'] === 'string'
+        ? HTMLAttributes['data-color-class']
+        : '';
+    const commentId =
+      typeof HTMLAttributes['data-comment-id'] === 'string'
+        ? HTMLAttributes['data-comment-id']
+        : '';
 
     return [
       'span',
       {
         'data-color-class': colorClass,
         'data-comment-id': commentId,
-        'class': `${colorClass} text-inherit`
+        class: `${colorClass} text-inherit`
       }
     ];
   },
@@ -203,14 +222,22 @@ export const CollaborationCommentsExtension = Mark.create<
           const commentId = attributes?.commentId ?? uuidv4();
           const commentText = attributes?.text ?? null;
           const colorClass =
-            attributes?.colorClass ?? this.options.defaultColorClass ?? DEFAULT_COLOR_CLASS;
+            attributes?.colorClass ??
+            this.options.defaultColorClass ??
+            DEFAULT_COLOR_CLASS;
 
           if (!attributes?.user) {
             console.error('Set comment: User is required');
             return false;
           }
 
-          const comment = createComment(commentId, attributes.commentType, attributes.user, commentText, colorClass);            
+          const comment = createComment(
+            commentId,
+            attributes.commentType,
+            attributes.user,
+            commentText,
+            colorClass
+          );
 
           this.storage.comments?.set(commentId, comment);
           commands.setMeta('addToHistory', this.options.addToHistory);
@@ -222,10 +249,10 @@ export const CollaborationCommentsExtension = Mark.create<
           });
         },
       unsetComment:
-      () =>
-      ({ commands }) => {
-        return commands.unsetMark(this.name);
-      },
+        () =>
+        ({ commands }) => {
+          return commands.unsetMark(this.name);
+        },
       commentAcceptProposal:
         ({ commentId }) =>
         ({ dispatch, state, tr }) => {
@@ -287,7 +314,12 @@ export const CollaborationCommentsExtension = Mark.create<
           return false;
         }
 
-        const reply = createReply(commentId, attributes.parentId, attributes.user, commentText);
+        const reply = createReply(
+          commentId,
+          attributes.parentId,
+          attributes.user,
+          commentText
+        );
 
         this.storage.comments?.set(commentId, reply);
         return true;
@@ -342,10 +374,19 @@ export const CollaborationCommentsExtension = Mark.create<
             const isCommentUpdater = comment.updatedBy?.id === userId;
             if (!isCommentCreator && !isCommentUpdater) continue;
 
-            const newUser = isCommentCreator ? { ...comment.user, username: userName } : comment.user;
-            const newCommentUpdater = isCommentUpdater && comment.updatedBy ?  { ...comment.updatedBy, username: userName } : comment.updatedBy;
-            this.storage.comments?.set(comment.commentId, { ...comment, user: newUser, updatedBy: newCommentUpdater });
-          };
+            const newUser = isCommentCreator
+              ? { ...comment.user, username: userName }
+              : comment.user;
+            const newCommentUpdater =
+              isCommentUpdater && comment.updatedBy
+                ? { ...comment.updatedBy, username: userName }
+                : comment.updatedBy;
+            this.storage.comments?.set(comment.commentId, {
+              ...comment,
+              user: newUser,
+              updatedBy: newCommentUpdater
+            });
+          }
           return true;
         }
     };

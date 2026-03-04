@@ -1,5 +1,7 @@
 # Setup for Production
+
 ## Docker Compose
+
 Important: Currently, the backend is expected to run on the subdomain `write-backend` as it is configured within the frontend during build time.
 
 ```

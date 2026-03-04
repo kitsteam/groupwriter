@@ -86,33 +86,50 @@ export const handleUploadImageRequest = async (
   response: ServerResponse<IncomingMessage>,
   prisma: PrismaClient,
 ): Promise<void> => {
-  await checkPermission(prisma, documentId, modificationSecret, response);
+  const hasPermission = await checkPermission(
+    prisma,
+    documentId,
+    modificationSecret,
+  );
+  if (!hasPermission) {
+    response.writeHead(403);
+    response.end();
+    return;
+  }
   try {
-    const maxFileSize = process.env.UPLOAD_IMAGE_MAX_SIZE_BYTES
-      ? parseInt(process.env.UPLOAD_IMAGE_MAX_SIZE_BYTES, 10)
-      : DEFAULT_MAX_IMAGE_SIZE_BYTES;
+    const parsed = parseInt(process.env.UPLOAD_IMAGE_MAX_SIZE_BYTES ?? "", 10);
+    const maxFileSize = Number.isNaN(parsed)
+      ? DEFAULT_MAX_IMAGE_SIZE_BYTES
+      : parsed;
 
     const form = formidable({ multiples: false, maxFileSize });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_fields, files] = await form.parse(request);
-    if (files["file"].length > 0) {
-      const file = files["file"][0];
-      const image = await createImage(
-        prisma,
-        documentId,
-        file?.mimetype,
-        file?.originalFilename,
-      );
-      await uploadEncryptedImage(image.id, image.mimetype, file?.filepath);
-
-      if (image) {
-        response.writeHead(200, { "Content-Type": "text/json" });
-        response.end(JSON.stringify({ imageUrl: `images/${image.id}` }));
-      } else {
-        response.writeHead(422);
-        response.end();
-      }
+    if (!files["file"] || files["file"].length === 0) {
+      response.writeHead(400);
+      response.end();
+      return;
     }
+    const file = files["file"][0];
+    const image = await createImage(
+      prisma,
+      documentId,
+      file?.mimetype,
+      file?.originalFilename,
+    );
+    if (!image) {
+      response.writeHead(422);
+      response.end();
+      return;
+    }
+    try {
+      await uploadEncryptedImage(image.id, image.mimetype, file?.filepath);
+    } catch (uploadError) {
+      await deleteImage(prisma, image.id);
+      throw uploadError;
+    }
+    response.writeHead(200, { "Content-Type": "text/json" });
+    response.end(JSON.stringify({ imageUrl: `images/${image.id}` }));
   } catch (error) {
     if (error instanceof Error && error.message.includes("maxTotalFileSize")) {
       response.writeHead(413, { "Content-Type": "text/json" });
@@ -139,12 +156,18 @@ export const handleGetImageRequest = async (
   if (getImageResult && downloadedImage) {
     response.writeHead(200, {
       "Content-Type": getImageResult.mimetype,
-      "Content-Disposition": "inline; filename=" + getImageResult.name,
+      "Content-Disposition": `inline; filename="${getImageResult.name.replace(/["\\\r\n]/g, "_")}"`,
+      "Content-Length": downloadedImage.length,
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "public, max-age=31536000, immutable",
     });
     try {
       await pipeline(Readable.from(downloadedImage), response);
     } catch (error) {
-      if (error instanceof Error && (error as NodeJS.ErrnoException).code === "ERR_STREAM_PREMATURE_CLOSE") {
+      if (
+        error instanceof Error &&
+        (error as NodeJS.ErrnoException).code === "ERR_STREAM_PREMATURE_CLOSE"
+      ) {
         return;
       }
       throw error;
@@ -163,12 +186,16 @@ export const handleDeleteImageRequest = async (
 ): Promise<void> => {
   const image = await getImage(prisma, imageId);
 
-  await checkPermission(
+  const hasPermission = await checkPermission(
     prisma,
     image?.documentId,
     modificationSecret,
-    response,
   );
+  if (!hasPermission) {
+    response.writeHead(403);
+    response.end();
+    return;
+  }
   // Delete bucket file first so DB record remains as reference if this fails
   const bucketResult = image ? await deleteImageFromBucket(imageId) : null;
   const deletedImageResult = bucketResult

@@ -37,6 +37,7 @@ import { LocalDocumentUser } from '../utils/localstorage';
 import { getAwarenessColor } from '../utils/userColors';
 import { setEditorContentFromFile } from '../utils/editorExport';
 import TableDropdown from './TableDropdown';
+import { v4 as uuidv4 } from 'uuid';
 
 const handleImageUpload = async (
   editor: Editor,
@@ -61,6 +62,7 @@ export const renderCommentButtons = (
   t: TFunction,
   options?: {
     className?: string;
+    addLocalEditingId?: (id: string) => void;
   }
 ): ReactElement[] => {
   return [
@@ -77,14 +79,17 @@ export const renderCommentButtons = (
         if (editor.isActive('comment')) {
           editor.chain().focus().unsetComment().run();
         } else {
+          const commentId = uuidv4();
           const colorAwarenessInfo = getAwarenessColor(currentUser.colorId);
           editor?.commands.setComment({
+            commentId,
             colorClass: colorAwarenessInfo?.bgClass,
             user: {
               id: currentUser.userId,
               username: currentUser.name
             }
           });
+          options?.addLocalEditingId?.(commentId);
         }
       }}
       disabled={editor.state.selection?.empty}
@@ -109,8 +114,10 @@ export const renderCommentButtons = (
         if (editor.isActive('comment')) {
           editor.chain().focus().unsetComment().run();
         } else {
+          const commentId = uuidv4();
           const colorAwarenessInfo = getAwarenessColor(currentUser.colorId);
           editor?.commands.setComment({
+            commentId,
             commentType: 'suggestion',
             colorClass: colorAwarenessInfo?.bgClass,
             user: {
@@ -118,6 +125,7 @@ export const renderCommentButtons = (
               username: currentUser.name
             }
           });
+          options?.addLocalEditingId?.(commentId);
         }
       }}
       disabled={editor.state.selection?.empty}
@@ -138,7 +146,8 @@ export default function MenuBar({
   modificationSecret,
   currentUser,
   children,
-  setMobileCommentMenuOpen
+  setMobileCommentMenuOpen,
+  addLocalEditingId
 }: {
   editor: Editor;
   documentId: string;
@@ -146,6 +155,7 @@ export default function MenuBar({
   currentUser: LocalDocumentUser | null;
   children: ReactNode;
   setMobileCommentMenuOpen: (state: boolean) => void;
+  addLocalEditingId: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -373,7 +383,8 @@ export default function MenuBar({
                 editor,
                 currentUser,
                 setMobileCommentMenuOpen,
-                t
+                t,
+                { addLocalEditingId }
               ).map((e) => (
                 <li key={`li-${e.key}`} className="lg:inline-block">
                   {e}

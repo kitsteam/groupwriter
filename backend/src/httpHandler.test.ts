@@ -114,7 +114,10 @@ describe("handleGetOwnDocumentsRequest", () => {
 describe("handleDeleteDocumentRequest", () => {
   it("deletes a document", async () => {
     const doc = buildFullDocument();
-    prismaMock.document.findFirst.mockResolvedValue({ id: doc.id } as never);
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      modificationSecret: doc.modificationSecret,
+    } as never);
     prismaMock.image.findMany.mockResolvedValue([]);
     prismaMock.document.delete.mockResolvedValue(doc);
 
@@ -190,11 +193,92 @@ describe("handleUploadImageRequest", () => {
 
     const response = mock<ServerResponse<IncomingMessage>>();
     const request = mock<IncomingMessage>();
-    await expect(
-      handleUploadImageRequest(doc.id, "wrong", request, response, prismaMock),
-    ).rejects.toBeUndefined();
+    await handleUploadImageRequest(
+      doc.id,
+      "wrong",
+      request,
+      response,
+      prismaMock,
+    );
 
     expect(response.writeHead.mock.calls[0][0]).toBe(403);
+  });
+
+  it("returns 422 when createImage returns null", async () => {
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      data: doc.data,
+      modificationSecret: doc.modificationSecret,
+    } as never);
+    prismaMock.image.create.mockResolvedValue(null);
+
+    const response = mock<ServerResponse<IncomingMessage>>();
+    const request = mock<IncomingMessage>();
+    await handleUploadImageRequest(
+      doc.id,
+      doc.modificationSecret,
+      request,
+      response,
+      prismaMock,
+    );
+
+    expect(response.writeHead.mock.calls[0][0]).toBe(422);
+  });
+
+  it("returns 400 when file is missing", async () => {
+    const doc = buildFullDocument();
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      data: doc.data,
+      modificationSecret: doc.modificationSecret,
+    } as never);
+
+    mockFormidableParse.mockResolvedValueOnce([{}, {}]);
+
+    const response = mock<ServerResponse<IncomingMessage>>();
+    const request = mock<IncomingMessage>();
+    await handleUploadImageRequest(
+      doc.id,
+      doc.modificationSecret,
+      request,
+      response,
+      prismaMock,
+    );
+
+    expect(response.writeHead.mock.calls[0][0]).toBe(400);
+  });
+
+  it("rolls back DB entry when S3 upload fails", async () => {
+    const doc = buildFullDocument();
+    const image = buildFullExampleImage(doc.id);
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      data: doc.data,
+      modificationSecret: doc.modificationSecret,
+    } as never);
+    prismaMock.image.create.mockResolvedValue(image);
+    prismaMock.image.delete.mockResolvedValue(image);
+
+    const { uploadEncryptedImage } = await import("./utils/uploaderDownloader");
+    vi.mocked(uploadEncryptedImage).mockRejectedValueOnce(
+      new Error("S3 upload failed"),
+    );
+
+    const response = mock<ServerResponse<IncomingMessage>>();
+    const request = mock<IncomingMessage>();
+    await handleUploadImageRequest(
+      doc.id,
+      doc.modificationSecret,
+      request,
+      response,
+      prismaMock,
+    );
+
+    expect(prismaMock.image.delete).toHaveBeenCalledWith({
+      where: { id: image.id },
+    });
+    expect(response.writeHead.mock.calls[0][0]).toBe(500);
   });
 
   it("returns 413 when file size exceeds maximum allowed size", async () => {
@@ -242,7 +326,7 @@ describe("handleGetImageRequest", () => {
     expect(response.writeHead.mock.calls[0][0]).toEqual(200);
     expect(response.writeHead.mock.calls[0][1]).toHaveProperty(
       "Content-Disposition",
-      "inline; filename=test.png",
+      'inline; filename="test.png"',
     );
     expect(response.writeHead.mock.calls[0][1]).toHaveProperty(
       "Content-Type",
@@ -291,9 +375,7 @@ describe("handleDeleteImageRequest", () => {
     );
 
     const response = mock<ServerResponse<IncomingMessage>>();
-    await expect(
-      handleDeleteImageRequest(doc.id, "wrong", response, prismaMock),
-    ).rejects.toBeUndefined();
+    await handleDeleteImageRequest(doc.id, "wrong", response, prismaMock);
 
     expect(response.writeHead.mock.calls[0][0]).toBe(403);
   });

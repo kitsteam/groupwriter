@@ -65,7 +65,10 @@ describe("deleteOldDocuments", () => {
 describe("deleteDocument", () => {
   it("should delete the document", async () => {
     const doc = buildFullDocument();
-    prismaMock.document.findFirst.mockResolvedValue({ id: doc.id } as never);
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      modificationSecret: doc.modificationSecret,
+    } as never);
     prismaMock.image.findMany.mockResolvedValue([]);
     prismaMock.document.delete.mockResolvedValue(doc);
 
@@ -84,7 +87,10 @@ describe("deleteDocument", () => {
   it("should delete linked images", async () => {
     const doc = buildFullDocument();
     const image = buildFullExampleImage(doc.id);
-    prismaMock.document.findFirst.mockResolvedValue({ id: doc.id } as never);
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: doc.id,
+      modificationSecret: doc.modificationSecret,
+    } as never);
     prismaMock.image.findMany.mockResolvedValue([image]);
     prismaMock.document.delete.mockResolvedValue(doc);
     vi.mocked(deleteImage).mockResolvedValue(image);

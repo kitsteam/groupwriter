@@ -14,7 +14,7 @@
 
 .landing-box h1::after {
   @apply h-8 w-1 inline-block ml-2;
-  content: "";
+  content: '';
   background: var(--color-primary);
   animation: caret-blink 2s steps(2) infinite;
 }

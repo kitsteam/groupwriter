@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { PrismaClient, Prisma } from "../../generated/prisma/client";
 import { deleteImage } from "./image";
 import { deleteImageFromBucket } from "../utils/s3";
@@ -68,7 +69,7 @@ export const updateDocument = async (
       error.code === "P2025"
     )
       return false;
-    console.log(error);
+    console.error(error);
     return false;
   }
 };
@@ -110,16 +111,15 @@ export const deleteDocument = async (
     console.info(`Deleting document ${documentName}`);
 
     const document = await prisma.document.findFirst({
-      where: {
-        id: documentName,
-        modificationSecret: modificationSecret,
-      },
-      select: {
-        id: true,
-      },
+      where: { id: documentName },
+      select: { id: true, modificationSecret: true },
     });
 
     if (!document) return false;
+
+    const a = Buffer.from(document.modificationSecret);
+    const b = Buffer.from(modificationSecret);
+    if (!(a.length === b.length && crypto.timingSafeEqual(a, b))) return false;
 
     await deleteDocumentWithImages(prisma, document.id);
     return true;
@@ -130,7 +130,7 @@ export const deleteDocument = async (
       error.code === "P2025"
     )
       return false;
-    console.log(error);
+    console.error(error);
     return false;
   }
 };
@@ -161,7 +161,9 @@ export const isValidModificationSecret = async (
   const document = await fetchDocument(prisma, documentName);
   if (!document) throw new Error("Document not found!");
 
-  return document.modificationSecret === modificationSecret;
+  const a = Buffer.from(document.modificationSecret);
+  const b = Buffer.from(modificationSecret);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
 const MAX_AGE_IN_DAYS = parseInt(
@@ -201,4 +203,3 @@ const deleteDocumentWithImages = async (
     },
   });
 };
-

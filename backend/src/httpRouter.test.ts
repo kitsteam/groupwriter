@@ -14,6 +14,9 @@ import {
 import jwt from "jsonwebtoken";
 
 vi.mock("./httpHandler");
+vi.mock("./utils/rateLimiter", () => ({
+  checkRateLimit: () => true,
+}));
 
 describe("httpRouter", () => {
   it("responds with OK to health check", async () => {

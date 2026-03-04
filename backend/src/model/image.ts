@@ -56,7 +56,7 @@ export const getImage = async (
 export const deleteImage = async (
   prisma: PrismaClient,
   imageId: string,
-): Promise<Image> => {
+): Promise<Image | null> => {
   if (!imageId || !isValidUUID(imageId)) return null;
 
   try {
@@ -76,28 +76,27 @@ export const deleteImage = async (
   }
 };
 
+const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png"]);
+
 const validateImageParams = (
   documentId: string,
   mimetype: string,
   name: string,
 ): boolean => {
   return (
-    documentId &&
-    mimetype &&
-    name &&
-    mimetype.split("/")[0] === "image" &&
+    !!documentId &&
+    !!mimetype &&
+    !!name &&
+    ALLOWED_MIME_TYPES.has(mimetype) &&
     isValidUUID(documentId)
   );
 };
 
 const getImageType = (mimetype: string) => {
-  const mimeTypeEnding = mimetype.split("/")[1];
-  switch (mimeTypeEnding) {
-    case "jpeg":
+  switch (mimetype) {
+    case "image/jpeg":
       return ".jpg";
-    case "gif":
-      return ".gif";
-    case "png":
+    case "image/png":
       return ".png";
     default:
       return "";

@@ -21,7 +21,8 @@ const CommentCard = ({
   activated,
   isLastClicked,
   absoluteTop,
-  toBeEdited
+  toBeEdited,
+  removeLocalEditingId
 }: {
   editor: Editor | null;
   comment: CommentItem;
@@ -30,6 +31,7 @@ const CommentCard = ({
   isLastClicked: boolean;
   absoluteTop: number;
   toBeEdited: boolean;
+  removeLocalEditingId: (id: string) => void;
 }) => {
   const { currentUser } = useContext(UserContext);
   const { readOnly } = useContext(EditorContext);
@@ -48,6 +50,7 @@ const CommentCard = ({
         currentUser &&
         comment.user?.id === currentUser?.userId
       ) {
+        removeLocalEditingId(comment.commentId);
         editor.commands.commentRemove({ commentId: comment.commentId });
       }
     };
@@ -57,7 +60,7 @@ const CommentCard = ({
     return () => {
       document.removeEventListener('click', handleClick);
     };
-  }, [comment, editor, currentUser]);
+  }, [comment, editor, currentUser, removeLocalEditingId]);
 
   const onCardClick = (): void => {
     if (!isOpened) setLastClickedCommentId(comment.commentId);
@@ -67,7 +70,10 @@ const CommentCard = ({
 
   const onDeleteClick = (): void => {
     if (readOnly) return;
-    if (editor) editor.commands.commentRemove({ commentId: comment.commentId });
+    if (editor) {
+      removeLocalEditingId(comment.commentId);
+      editor.commands.commentRemove({ commentId: comment.commentId });
+    }
   };
 
   const onCommentEdit = (event: React.MouseEvent<HTMLButtonElement>): void => {
@@ -94,6 +100,7 @@ const CommentCard = ({
 
     setIsOpened(false);
     setIsEditing(false);
+    removeLocalEditingId(comment.commentId);
     if (comment.text === null && editor) {
       editor.commands.commentRemove({ commentId: comment.commentId });
     }
@@ -107,6 +114,7 @@ const CommentCard = ({
     setIsOpened(false);
     setIsEditing(false);
     setLastClickedCommentId(null);
+    removeLocalEditingId(comment.commentId);
     if (editor && currentUser) {
       // Comments are instantly created, so only an non defined text reveals a new comment
       const isCommentUpdate = !!comment.text;

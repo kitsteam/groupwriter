@@ -2,7 +2,10 @@ import { createDocument, fetchOwnDocuments } from '../utils/serverRequests';
 import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import './landingPageStyles.scss';
-import { getLocalMostRecentThreeDocuments, LocalDocument } from '../utils/localstorage';
+import {
+  getLocalMostRecentThreeDocuments,
+  LocalDocument
+} from '../utils/localstorage';
 import { useState, useEffect } from 'react';
 
 function LandingPage() {
