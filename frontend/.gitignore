@@ -19,7 +19,9 @@
 !index.html
 !LICENSE
 !package.json
-!package-lock.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!.npmrc
 !postcss.config.mjs
 !README.md
 !tsconfig.json

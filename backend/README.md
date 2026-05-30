@@ -15,16 +15,16 @@ Migrations:
 
 ```
   Create a migration from changes in Prisma schema, apply it to the database, trigger generators (e.g. Prisma Client)
-  $ npx prisma migrate dev
+  $ pnpm exec prisma migrate dev
 
   Reset all migrations
-  $ npx prisma db push --force-reset
+  $ pnpm exec prisma db push --force-reset
 ```
 
 Start the server:
 
 ```
-docker compose exec app npm run start:dev
+docker compose exec app pnpm run start:dev
 ```
 
 https://www.prisma.io/docs/orm/prisma-migrate/understanding-prisma-migrate

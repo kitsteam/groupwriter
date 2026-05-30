@@ -9,7 +9,8 @@
 !entrypoint.prod.sh
 !LICENSE
 !package.json
-!package-lock.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
 !tsconfig.json
 !tsconfig.prod.json
 !prisma.config.ts

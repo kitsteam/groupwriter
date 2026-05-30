@@ -18,7 +18,9 @@
 !eslint.config.mjs
 !LICENSE
 !package.json
-!package-lock.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!.npmrc
 !README.md
 !tsconfig.json
 !tsconfig.prod.json

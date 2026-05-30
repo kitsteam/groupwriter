@@ -9,7 +9,10 @@ on:
       node-version:
         required: false
         type: string
-        default: "22"
+        default: "24"
+
+permissions:
+  contents: read
 
 jobs:
   checks:
@@ -17,29 +20,29 @@ jobs:
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
-    
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: ./.github/actions/setup-pnpm
         with:
+          working-directory: ${{ inputs.working-directory }}
           node-version: ${{ inputs.node-version }}
-          cache: "npm"
-          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
-      
-      - run: npm ci
 
       - name: Generate prisma
         if: contains(inputs.working-directory, 'backend')
-        run: npx prisma generate
+        run: pnpm exec prisma generate
         env:
           DATABASE_URL: postgresql://test-placeholder:test-placeholder@localhost:5432/test-placeholder
-      
+
       - name: Run tests
-        run: npm test
-      
+        run: pnpm test
+
       - name: Check linting
-        run: npm run lint:check
-      
-      - name: Check formatting
-        run: npm run type:check
+        run: pnpm run lint:check
+
+      - name: Type check
+        run: pnpm run type:check
+
+      - name: pnpm audit (fail on high/critical production deps)
+        run: pnpm audit --audit-level=high --prod

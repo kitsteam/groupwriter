@@ -1,4 +1,6 @@
 name: Playwright Tests
+permissions:
+  contents: read
 on:
   push:
     branches: [main]
@@ -8,28 +10,25 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    # Browsers + system deps are pre-installed in the official image, so there is
+    # no flaky `playwright install --with-deps` download step. Keep the tag in sync
+    # with the @playwright/test version in frontend/package.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble
     steps:
-      - uses: actions/checkout@v5
-      
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - uses: ./.github/actions/setup-pnpm
         with:
-          node-version: lts/*
-      
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: npm ci
-      
-      - name: Install Playwright Browsers
-        working-directory: ./frontend
-        run: npx playwright install chromium --with-deps
-      
+          working-directory: ./frontend
+
       - name: Run Playwright tests
         working-directory: ./frontend
-        run: npx playwright test
+        run: pnpm exec playwright test
         env:
           VITE_HOCUSPOCUS_SERVER_URL: "http://localhost:5173/backend"
-      
-      - uses: actions/upload-artifact@v4
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report

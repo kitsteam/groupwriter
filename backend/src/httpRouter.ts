@@ -115,7 +115,17 @@ function extractPersonIdFromCookies(cookies?: string): string | null {
   try {
     const decoded = jwt.verify(personId, secret, {
       algorithms: ["HS256"],
-    }) as { pid: string };
+    });
+
+    if (
+      typeof decoded !== "object" ||
+      decoded === null ||
+      typeof decoded.pid !== "string" ||
+      decoded.pid.length === 0
+    ) {
+      return null;
+    }
+
     return decoded.pid;
   } catch {
     console.error("JWT verification failed for person_id cookie");

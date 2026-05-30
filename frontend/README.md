@@ -15,8 +15,8 @@ Clone the backend first in the parental folder: `git clone git@github.com:b310-d
 ```
 docker compose build
 docker compose up -d
-docker compose exec editor npm run dev # server starts on 5173 by default
-docker compose exec backend npm run start:dev # start the backend
+docker compose exec editor pnpm run dev # server starts on 5173 by default
+docker compose exec backend pnpm run start:dev # start the backend
 ```
 
 Requests are proxied to the backend with the `/backend` path in dev, see `vite.config.ts`.
@@ -25,8 +25,8 @@ Browse to `http://localhost:5173`
 
 #### Tests
 
-Unit tests: `npm run test`,
-e2e Playwright tests: `npx playwright test`
+Unit tests: `pnpm test`,
+e2e Playwright tests: `pnpm exec playwright test`
 
 ### Production
 

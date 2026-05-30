@@ -78,6 +78,24 @@ describe("httpRouter", () => {
     vi.unstubAllEnvs();
   });
 
+  it("rejects a person id with a non-string pid claim", async () => {
+    vi.stubEnv("JWT_SECRET", "test");
+    const payload = mock<onRequestPayload>();
+    // A validly signed token whose pid is an object, not a string.
+    const secret = jwt.sign({ pid: {} }, "test", {
+      algorithm: "HS256",
+    });
+    payload.request.method = "GET";
+    payload.request.url = "/documents";
+    payload.request.headers = { cookie: `person_id=${secret}` };
+
+    await expect(httpRouter(payload, null)).rejects.toThrow();
+    // The object pid must be rejected, so the extracted person id is null.
+    const personId = vi.mocked(handleGetOwnDocumentsRequest).mock.calls[0][2];
+    expect(personId).toBeNull();
+    vi.unstubAllEnvs();
+  });
+
   it("creates images", async () => {
     const payload = mock<onRequestPayload>();
     payload.request.method = "POST";

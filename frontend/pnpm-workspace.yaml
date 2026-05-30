@@ -1,0 +1,21 @@
+packages:
+  - 'packages/*'
+# 7-day quarantine on newly published versions (mitigates fast-revoked malicious releases).
+minimumReleaseAge: 10080
+# Lifecycle-script allowlist. pnpm 10 blocks dependency build scripts by default.
+# @parcel/watcher and esbuild ship native binaries vite needs; core-js's postinstall
+# is only a funding notice and stays disallowed.
+allowBuilds:
+  '@parcel/watcher': true
+  core-js: false
+  esbuild: true
+# Transitive/direct-dep CVE pins. Audit periodically with `pnpm why <pkg>` and remove
+# entries whose selector no longer matches any node in pnpm-lock.yaml.
+overrides:
+  'jspdf@<=4.2.0': '>=4.2.1'
+  'vite@>=7.0.0 <7.3.2': '>=7.3.2 <8'
+  'undici@>=7.0.0 <7.24.0': '>=7.24.0 <8'
+  'immutable@>=5.0.0 <5.1.5': '>=5.1.5 <6'
+  'flatted@<3.4.2': '>=3.4.2'
+  'picomatch@<2.3.2': '2.3.2'
+  'picomatch@>=4.0.0 <4.0.4': '>=4.0.4'

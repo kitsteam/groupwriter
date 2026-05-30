@@ -1,22 +1,29 @@
-# Base:
-FROM node:22-alpine AS base
+ARG NODE_VERSION=24
+ARG ALPINE_VERSION=3.21
+ARG PNPM_VERSION=10.33.4
 
-RUN apk add --no-cache bash git
+# Base:
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
+
+ENV APP_PATH=/home/node/app
+WORKDIR $APP_PATH
+
+RUN apk add --no-cache bash git \
+ && corepack enable \
+ && chown node:node $APP_PATH
 
 USER node
 
-ENV APP_PATH=/home/node/app
+ARG PNPM_VERSION
+RUN corepack prepare pnpm@${PNPM_VERSION} --activate
 
-RUN mkdir -p $APP_PATH
-WORKDIR $APP_PATH
-
-COPY --chown=node:node package.json package-lock.json tsconfig.json $APP_PATH/
+# Workspace manifests + the local packages (their sources run a `prepare` build on install).
+COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+COPY --chown=node:node packages ./packages
 
 # Development:
 FROM base AS development
-USER node
-
-RUN npm install
+RUN pnpm install --frozen-lockfile
 
 # Production builder:
 FROM base AS production_builder
@@ -25,19 +32,14 @@ ARG VITE_HOCUSPOCUS_SUBDOMAIN
 ARG VITE_LEGAL_URL
 ARG VITE_PRIVACY_STATEMENT_URL
 
-USER node
+RUN pnpm install --frozen-lockfile
 
-# first, copy packages as these are built during the install step
-COPY  --chown=node:node packages $APP_PATH/packages
+COPY --chown=node:node src ./src
+COPY --chown=node:node public ./public
+COPY --chown=node:node config ./config
+COPY --chown=node:node postcss.config.mjs vite.config.ts index.html ./
 
-RUN npm ci
-
-COPY  --chown=node:node src $APP_PATH/src
-COPY  --chown=node:node public $APP_PATH/public
-COPY  --chown=node:node config $APP_PATH/config
-COPY  --chown=node:node postcss.config.mjs vite.config.ts index.html $APP_PATH/
-
-RUN npm run build
+RUN pnpm run build
 
 # Production:
 FROM nginxinc/nginx-unprivileged:stable-alpine-slim AS production
