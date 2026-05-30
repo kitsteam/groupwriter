@@ -33,7 +33,9 @@ export const getDocumentsByOwner = async (
   prisma: PrismaClient,
   ownerExternalId: string,
 ) => {
-  if (!ownerExternalId) return [];
+  if (typeof ownerExternalId !== "string" || ownerExternalId.length === 0) {
+    return [];
+  }
   return prisma.document.findMany({
     where: {
       ownerExternalId: ownerExternalId,
@@ -107,6 +109,8 @@ export const deleteDocument = async (
   documentName: string,
   modificationSecret: string,
 ): Promise<boolean> => {
+  if (!isValidUUID(documentName)) return false;
+
   try {
     console.info(`Deleting document ${documentName}`);
 

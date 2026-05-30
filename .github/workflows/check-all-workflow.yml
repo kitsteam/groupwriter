@@ -5,15 +5,35 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   frontend:
     uses: ./.github/workflows/reusable-checks.yml
     with:
       working-directory: ./frontend
-      node-version: "22"
-  
+      node-version: "24"
+
   backend:
     uses: ./.github/workflows/reusable-checks.yml
     with:
       working-directory: ./backend
-      node-version: "22"
+      node-version: "24"
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Dependency Review (PR diff vs base)
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          # All permissive, except MPL-2.0 (weak/file-level copyleft) which is only
+          # pulled in by build tooling (lightningcss) and is safe to consume as an
+          # unmodified dependency. Compound SPDX expressions (e.g. "MIT AND MITNFA")
+          # require every component to be listed here.
+          allow-licenses: MIT, MIT-0, MITNFA, Apache-2.0, BSD-2-Clause, BSD-2-Clause-Views, BSD-3-Clause, ISC, 0BSD, CC0-1.0, CC-BY-4.0, Unlicense, BlueOak-1.0.0, Zlib, PostgreSQL, Python-2.0, MPL-2.0

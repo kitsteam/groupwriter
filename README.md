@@ -3,7 +3,7 @@
 GroupWriter is a collaborative text editing application, similar and influenced by [etherpad](https://etherpad.org). Create and edit documents in real-time with colleagues or friends, while sharing images, adding comments, and making suggestions. File upload is based on s3 compatible storage like minio.
 
 ## Demo
-![Plugin as used in groupwriter](/documentation/groupwriter.gif)
+![Groupwriter](/documentation/groupwriter.gif)
 
 ## Setup
 
@@ -15,6 +15,12 @@ Important: Currently, the backend is expected to run on the subdomain `write-bac
 
 ```
 services:
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
   editor:
     image: ghcr.io/b310-digital/groupwriter/groupwriter-frontend:latest
     ports:
@@ -72,6 +78,34 @@ volumes:
   postgres_data:
 ```
 
+Create a `Caddyfile` next to the compose file:
+
+```caddyfile
+http://write.localhost {
+    reverse_proxy editor:8080
+}
+
+http://write-backend.localhost {
+    # The backend sends no CORS headers, and the editor (write.localhost) is a
+    # different origin, so the proxy has to add them (including answering the
+    # preflight OPTIONS request the browser sends before POST/DELETE).
+    header {
+        Access-Control-Allow-Origin "http://write.localhost"
+        Access-Control-Allow-Methods "GET, POST, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Authorization, Content-Type"
+    }
+
+    @options method OPTIONS
+    handle @options {
+        respond 204
+    }
+
+    handle {
+        reverse_proxy backend:3000
+    }
+}
+```
+
 Example for a `.env` file:
 
 ```
@@ -93,7 +127,7 @@ Then start it:
 docker compose up -d
 ```
 
-And visit the app at `localhost:8080`!
+And visit the app at `http://write.localhost`!
 
 ### Options and configurations
 

@@ -4,8 +4,12 @@ import { EditorContext } from '../contexts/EditorContext';
 import { useNavigate } from 'react-router';
 import { deleteDocument } from '../utils/serverRequests';
 import { useTranslation } from 'react-i18next';
-import logo from '/images/publisher-logo.svg?url';
+import logo from '/images/logo.svg?url';
 import { deleteLocalDocument } from '../utils/localstorage';
+
+// Served from public/images/logo.svg; referenced by URL rather than imported as
+// a module (vite >=7.3.2 denies query-suffixed absolute asset IDs like `?url`).
+const logo = '/images/publisher-logo.svg';
 
 export function AboutModal({
   isModalOpen,

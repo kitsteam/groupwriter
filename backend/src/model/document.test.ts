@@ -130,6 +130,13 @@ describe("deleteDocument", () => {
     expect(result).toBeFalsy();
     expect(prismaMock.document.delete).not.toHaveBeenCalled();
   });
+
+  it("should not query Prisma when the document id is not a valid UUID", async () => {
+    const result = await deleteDocument(prismaMock, "not-a-uuid", "secret");
+
+    expect(result).toBeFalsy();
+    expect(prismaMock.document.findFirst).not.toHaveBeenCalled();
+  });
 });
 
 describe("updateLastAccessedAt", () => {
@@ -324,6 +331,16 @@ describe("document ownership", () => {
 
     it("returns an empty list if ownerExternalId is null", async () => {
       const docs = await getDocumentsByOwner(prismaMock, null);
+
+      expect(docs).toEqual([]);
+      expect(prismaMock.document.findMany).not.toHaveBeenCalled();
+    });
+
+    it("returns an empty list if ownerExternalId is not a string", async () => {
+      // Guards against a Prisma filter object reaching the where clause.
+      const docs = await getDocumentsByOwner(prismaMock, {
+        not: null,
+      } as unknown as string);
 
       expect(docs).toEqual([]);
       expect(prismaMock.document.findMany).not.toHaveBeenCalled();

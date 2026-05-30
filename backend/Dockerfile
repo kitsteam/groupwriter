@@ -1,50 +1,52 @@
-FROM node:22-alpine3.19 AS base
+ARG NODE_VERSION=24
+ARG ALPINE_VERSION=3.21
+ARG PNPM_VERSION=10.33.4
+
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
+
+ENV APP_PATH=/home/node/app
+WORKDIR $APP_PATH
+
+RUN apk add --no-cache tini \
+ && corepack enable \
+ && chown node:node $APP_PATH
 
 USER node
 
-ENV APP_PATH=/home/node/app
+ARG PNPM_VERSION
+RUN corepack prepare pnpm@${PNPM_VERSION} --activate
 
-RUN mkdir -p $APP_PATH
-WORKDIR $APP_PATH
 
-# Production build step for the application. We need to omit NODE_ENV=production here, because tsc is a development dependency
-FROM base AS production_builder
+FROM base AS builder
 
 # Default placeholder for Prisma schema validation (overridable via --build-arg)
 ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 ENV DATABASE_URL=${DATABASE_URL}
 
-COPY --chown=node:node package.json package-lock.json tsconfig.json tsconfig.prod.json prisma.config.ts entrypoint.prod.sh  $APP_PATH/
+COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json tsconfig.prod.json prisma.config.ts ./
+RUN pnpm install --frozen-lockfile
 
-USER node
-
-RUN npm ci
-
-COPY --chown=node:node src/ $APP_PATH/src/
+COPY --chown=node:node src/ ./src/
 COPY --chown=node:node prisma/ ./prisma/
-# needed for prisma to generate the types
-RUN npx prisma generate
+RUN pnpm exec prisma generate
+RUN pnpm run build:prod
 
-RUN npm run build:prod
-
-# Production Container
-FROM base AS production
-# Set NODE_ENV, so that npm ci omits dev dependencies
-ENV NODE_ENV=production
-WORKDIR $APP_PATH
-
-COPY --chown=node:node entrypoint.prod.sh package.json package-lock.json ./
-RUN npm ci
-
-COPY --from=production_builder --chown=node:node $APP_PATH/dist/ ./dist/
-# Move prisma related files to the dist folder to enable the deploy command
-COPY --from=production_builder --chown=node:node $APP_PATH/prisma/ ./dist/prisma/
-COPY --from=production_builder --chown=node:node $APP_PATH/prisma.config.ts ./dist/prisma.config.ts
-
-CMD ["./entrypoint.prod.sh"]
 
 FROM base AS development
-USER node
-COPY --chown=node:node package.json package-lock.json tsconfig.json tsconfig.prod.json entrypoint.prod.sh  $APP_PATH/
 
-RUN npm install
+
+FROM base AS production
+
+ENV NODE_ENV=production
+
+COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --prod
+
+COPY --from=builder --chown=node:node $APP_PATH/dist ./dist
+COPY --from=builder --chown=node:node $APP_PATH/prisma ./dist/prisma
+COPY --from=builder --chown=node:node $APP_PATH/prisma.config.ts ./dist/prisma.config.ts
+
+COPY --chown=node:node --chmod=755 entrypoint.prod.sh ./
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["./entrypoint.prod.sh"]

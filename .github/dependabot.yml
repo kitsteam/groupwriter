@@ -1,35 +1,121 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# Dependabot config.
+# Reference: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+# The "npm" ecosystem covers pnpm (Dependabot reads pnpm-lock.yaml).
+# frontend/ and backend/ are independent pnpm projects; GitHub Actions live at the repo root.
 
 version: 2
 updates:
+  # --- frontend (pnpm) ---
   - package-ecosystem: "npm"
-    directory: "/frontend" # Location of package manifests
+    directory: "/frontend"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Berlin"
     open-pull-requests-limit: 15
+    labels:
+      - "dependencies"
+      - "npm"
+      - "frontend"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    cooldown:
+      default-days: 7
     groups:
       production-dependencies:
         dependency-type: "production"
+        update-types: ["minor", "patch"]
       development-dependencies:
         dependency-type: "development"
-  - package-ecosystem: "github-actions"
-    directory: "/frontend" # Location of package manifests
-    schedule:
-      interval: "weekly"
+        update-types: ["minor", "patch"]
+
+  # --- backend (pnpm) ---
   - package-ecosystem: "npm"
-    directory: "/backend" # Location of package manifests
+    directory: "/backend"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Berlin"
     open-pull-requests-limit: 15
+    labels:
+      - "dependencies"
+      - "npm"
+      - "backend"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    cooldown:
+      default-days: 7
     groups:
       production-dependencies:
         dependency-type: "production"
+        update-types: ["minor", "patch"]
       development-dependencies:
         dependency-type: "development"
-  - package-ecosystem: "github-actions"
-    directory: "/backend" # Location of package manifests
+        update-types: ["minor", "patch"]
+
+  # --- container images ---
+  - package-ecosystem: "docker"
+    directory: "/frontend"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+      - "frontend"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
+    cooldown:
+      default-days: 7
+    # Node base image is bumped manually on the Node LTS cycle.
+    ignore:
+      - dependency-name: "node"
+
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+      - "backend"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
+    cooldown:
+      default-days: 7
+    # Node base image is bumped manually on the Node LTS cycle.
+    ignore:
+      - dependency-name: "node"
+
+  # --- GitHub Actions (workflows live at the repo root) ---
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"
+    cooldown:
+      default-days: 7

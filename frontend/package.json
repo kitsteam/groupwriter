@@ -6,6 +6,10 @@
   "description": "groupwriter editor",
   "homepage": "https://b310.de",
   "author": "B310 Digital GmbH",
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": "^24.0"
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
@@ -15,19 +19,20 @@
     "test": "vitest",
     "prettier:format": "prettier --config .prettierrc 'src/**/*.{ts,tsx}' . --write",
     "preview": "vite preview",
-    "format:check": "npx prettier --config .prettierrc 'src/**/*.{ts,tsx}' . --check"
+    "format:check": "prettier --config .prettierrc 'src/**/*.{ts,tsx}' . --check"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.5",
     "@heroicons/react": "^2.2.0",
     "@hocuspocus/provider": "^3.4.4",
-    "@packages/tiptap-extension-color-with-classes": "*",
-    "@packages/tiptap-extension-comment-collaboration": "*",
-    "@packages/tiptap-extension-image-delete-callback": "*",
+    "@packages/tiptap-extension-color-with-classes": "workspace:*",
+    "@packages/tiptap-extension-comment-collaboration": "workspace:*",
+    "@packages/tiptap-extension-image-delete-callback": "workspace:*",
     "@tiptap/core": "^3.20.0",
     "@tiptap/extension-collaboration": "^3.20.0",
     "@tiptap/extension-collaboration-caret": "^3.20.0",
     "@tiptap/extension-color": "^3.20.0",
+    "@tiptap/extension-heading": "^3.20.0",
     "@tiptap/extension-image": "^3.20.0",
     "@tiptap/extension-link": "^3.20.0",
     "@tiptap/extension-placeholder": "^3.20.0",
@@ -81,10 +86,5 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-musl": "4.59.0"
-  },
-  "workspaces": [
-    "packages/tiptap-extension-color-with-classes",
-    "packages/tiptap-extension-image-delete-callback",
-    "packages/tiptap-extension-comment-collaboration"
-  ]
+  }
 }
