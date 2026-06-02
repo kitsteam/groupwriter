@@ -9,7 +9,11 @@ import {
   createDocument,
   getDocumentsByOwner,
 } from "./document";
-import { buildFullDocument } from "../../tests/helpers/documentHelpers";
+import {
+  buildFullDocument,
+  buildCreatedDocument,
+  buildListedDocument,
+} from "../../tests/helpers/documentHelpers";
 import { buildFullExampleImage } from "../../tests/helpers/imageHelpers";
 import { deleteImage } from "./image";
 import { deleteImageFromBucket } from "../utils/s3";
@@ -40,6 +44,7 @@ describe("deleteOldDocuments", () => {
     });
     expect(prismaMock.document.delete).toHaveBeenCalledWith({
       where: { id: oldDoc.id },
+      omit: { ownerExternalId: true },
     });
   });
 
@@ -81,6 +86,7 @@ describe("deleteDocument", () => {
     expect(result).toBeTruthy();
     expect(prismaMock.document.delete).toHaveBeenCalledWith({
       where: { id: doc.id },
+      omit: { ownerExternalId: true },
     });
   });
 
@@ -150,6 +156,7 @@ describe("updateLastAccessedAt", () => {
     expect(prismaMock.document.update).toHaveBeenCalledWith({
       where: { id: doc.id },
       data: { lastAccessedAt: expect.any(Date) as Date },
+      omit: { ownerExternalId: true },
     });
   });
 
@@ -257,6 +264,7 @@ describe("updateDocument", () => {
         updatedAt: expect.any(Date) as Date,
         lastAccessedAt: expect.any(Date) as Date,
       },
+      omit: { ownerExternalId: true },
     });
   });
 
@@ -282,43 +290,75 @@ describe("updateDocument", () => {
 
 describe("document ownership", () => {
   describe("createDocument", () => {
-    it("assigns ownerExternalId when passed", async () => {
+    it("records the ownerExternalId insert value but omits it from the query result", async () => {
       const doc = buildFullDocument({ ownerExternalId: "owner-123" });
       prismaMock.document.create.mockResolvedValue(doc);
 
-      const result = await createDocument(prismaMock, "owner-123");
+      await createDocument(prismaMock, "owner-123");
 
-      expect(result.ownerExternalId).toBe("owner-123");
       expect(prismaMock.document.create).toHaveBeenCalledWith({
         data: { ownerExternalId: "owner-123" },
+        omit: { ownerExternalId: true },
       });
     });
 
-    it("sets ownerExternalId to null when null is passed", async () => {
+    it("records a null ownerExternalId when null is passed and still omits it", async () => {
       const doc = buildFullDocument({ ownerExternalId: null });
       prismaMock.document.create.mockResolvedValue(doc);
 
-      const result = await createDocument(prismaMock, null);
+      await createDocument(prismaMock, null);
 
-      expect(result.ownerExternalId).toBeNull();
+      expect(prismaMock.document.create).toHaveBeenCalledWith({
+        data: { ownerExternalId: null },
+        omit: { ownerExternalId: true },
+      });
+    });
+
+    it("returns the created document without the ownerExternalId field", async () => {
+      // Simulate Prisma honouring the `omit` clause (the mock cannot do this
+      // on its own); createDocument returns that production-shape row verbatim,
+      // so an exact match proves no ownerExternalId key is present.
+      const created = buildCreatedDocument();
+      prismaMock.document.create.mockResolvedValue(created as never);
+
+      const result = await createDocument(prismaMock, "owner-123");
+
+      expect(result).toEqual(created);
     });
   });
 
   describe("getDocumentsByOwner", () => {
-    it("returns only documents with matching ownerExternalId in the correct order", async () => {
+    it("scopes the query to the owner and omits ownerExternalId and data", async () => {
+      // The `where` clause is what isolates one owner's documents from
+      // another's, so asserting it covers ownership filtering (AC5).
       const ownerA = "owner-A";
-      const doc1 = buildFullDocument({ ownerExternalId: ownerA });
-      const doc2 = buildFullDocument({ ownerExternalId: ownerA });
+      prismaMock.document.findMany.mockResolvedValue([]);
 
-      prismaMock.document.findMany.mockResolvedValue([doc1, doc2]);
+      await getDocumentsByOwner(prismaMock, ownerA);
 
-      const docs = await getDocumentsByOwner(prismaMock, ownerA);
-
-      expect(docs.length).toBe(2);
       expect(prismaMock.document.findMany).toHaveBeenCalledWith({
         where: { ownerExternalId: ownerA },
         orderBy: { createdAt: "desc" },
+        omit: { ownerExternalId: true, data: true },
       });
+    });
+
+    it("returns the owner's documents without the ownerExternalId field", async () => {
+      // Simulate Prisma honouring the `omit` clause for owned documents; an
+      // exact match proves no element carries an ownerExternalId key.
+      const ownerADocs = [buildListedDocument(), buildListedDocument()];
+      prismaMock.document.findMany.mockResolvedValue(ownerADocs as never);
+
+      const docs = await getDocumentsByOwner(prismaMock, "owner-A");
+
+      expect(docs).toEqual(ownerADocs);
+    });
+
+    it("returns an empty list without querying when ownerExternalId is an empty string", async () => {
+      const docs = await getDocumentsByOwner(prismaMock, "");
+
+      expect(docs).toEqual([]);
+      expect(prismaMock.document.findMany).not.toHaveBeenCalled();
     });
 
     it("returns an empty list if owner has no documents", async () => {

@@ -15,7 +15,11 @@ import { downloadEncryptedImage } from "./utils/uploaderDownloader";
 import { deleteImageFromBucket } from "./utils/s3";
 import { DeleteObjectCommandOutput } from "@aws-sdk/client-s3";
 import { prismaMock } from "../tests/helpers/mockPrisma";
-import { buildFullDocument } from "../tests/helpers/documentHelpers";
+import {
+  buildFullDocument,
+  buildCreatedDocument,
+  buildListedDocument,
+} from "../tests/helpers/documentHelpers";
 import { buildFullExampleImage } from "../tests/helpers/imageHelpers";
 
 vi.mock("stream/promises");
@@ -55,32 +59,29 @@ describe("handleHealthRequest", () => {
 });
 
 describe("handleCreateDocumentRequest", () => {
-  it("creates a document without owner", async () => {
-    const doc = buildFullDocument({ ownerExternalId: null });
-    prismaMock.document.create.mockResolvedValue(doc);
+  it("does not include ownerExternalId in the response body", async () => {
+    prismaMock.document.create.mockResolvedValue(
+      buildCreatedDocument() as never,
+    );
 
     const response = mock<ServerResponse<IncomingMessage>>();
-    await handleCreateDocumentRequest(response, prismaMock, null);
+    await handleCreateDocumentRequest(response, prismaMock, "owner-123");
 
-    const result = JSON.parse(
-      response.end.mock.calls[0][0] as string,
-    ) as Document;
-    expect(result.id).toBeDefined();
-    expect(result.ownerExternalId).toBeNull();
+    const body = response.end.mock.calls[0][0] as string;
+    expect(body).not.toContain("ownerExternalId");
   });
 
-  it("creates a document with owner", async () => {
-    const doc = buildFullDocument({ ownerExternalId: "123" });
-    prismaMock.document.create.mockResolvedValue(doc);
+  it("returns the document produced by the model", async () => {
+    // The model omits ownerExternalId, so the mock returns the production
+    // shape; the handler serializes it verbatim (dates become ISO strings).
+    const created = buildCreatedDocument();
+    prismaMock.document.create.mockResolvedValue(created as never);
 
     const response = mock<ServerResponse<IncomingMessage>>();
-    await handleCreateDocumentRequest(response, prismaMock, "123");
+    await handleCreateDocumentRequest(response, prismaMock, "owner-123");
 
-    const result = JSON.parse(
-      response.end.mock.calls[0][0] as string,
-    ) as Document;
-    expect(result.id).toBeDefined();
-    expect(result.ownerExternalId).toEqual("123");
+    const body = response.end.mock.calls[0][0] as string;
+    expect(JSON.parse(body)).toEqual(JSON.parse(JSON.stringify(created)));
   });
 });
 
@@ -96,18 +97,29 @@ describe("handleGetOwnDocumentsRequest", () => {
     expect(prismaMock.document.findMany).not.toHaveBeenCalled();
   });
 
-  it("returns list when ownerId is provided", async () => {
-    const doc = buildFullDocument({ ownerExternalId: "owner-234" });
-    prismaMock.document.findMany.mockResolvedValue([doc]);
+  it("does not include ownerExternalId in any returned document", async () => {
+    const doc = buildListedDocument({ ownerExternalId: "owner-234" });
+    prismaMock.document.findMany.mockResolvedValue([doc] as never);
 
     const response = mock<ServerResponse<IncomingMessage>>();
     await handleGetOwnDocumentsRequest(response, prismaMock, "owner-234");
 
-    const result = JSON.parse(
-      response.end.mock.calls[0][0] as string,
-    ) as Document[];
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toEqual(doc.id);
+    const body = response.end.mock.calls[0][0] as string;
+    expect(body).not.toContain("ownerExternalId");
+  });
+
+  it("returns the owner's documents produced by the model", async () => {
+    // The model omits ownerExternalId and data, so the mock returns the
+    // production shape (id, modificationSecret, timestamps); the handler
+    // serializes it verbatim (dates become ISO strings).
+    const doc = buildListedDocument({ ownerExternalId: "owner-234" });
+    prismaMock.document.findMany.mockResolvedValue([doc] as never);
+
+    const response = mock<ServerResponse<IncomingMessage>>();
+    await handleGetOwnDocumentsRequest(response, prismaMock, "owner-234");
+
+    const body = response.end.mock.calls[0][0] as string;
+    expect(JSON.parse(body)).toEqual(JSON.parse(JSON.stringify([doc])));
   });
 });
 
