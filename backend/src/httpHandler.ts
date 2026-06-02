@@ -53,7 +53,7 @@ export const handleGetOwnDocumentsRequest = async (
     response.end(JSON.stringify([]));
     return;
   }
-  console.debug(`Fetching documents for ownerExternalId=${personId}`);
+  console.debug(`Fetching documents for authenticated owner`);
   const documents = await getDocumentsByOwner(prisma, personId).catch(
     (error: Error) => {
       console.error(error);

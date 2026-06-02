@@ -8,7 +8,10 @@ export const createDocument = async (
   prisma: PrismaClient,
   personId?: string | null,
 ) => {
-  return prisma.document.create({ data: { ownerExternalId: personId } });
+  return prisma.document.create({
+    data: { ownerExternalId: personId },
+    omit: { ownerExternalId: true },
+  });
 };
 
 export const fetchDocument = async (
@@ -43,6 +46,7 @@ export const getDocumentsByOwner = async (
     orderBy: {
       createdAt: "desc",
     },
+    omit: { ownerExternalId: true, data: true },
   });
 };
 
@@ -61,6 +65,7 @@ export const updateDocument = async (
         updatedAt: new Date(),
         lastAccessedAt: new Date(),
       },
+      omit: { ownerExternalId: true },
     });
 
     return true;
@@ -149,6 +154,7 @@ export const updateLastAccessedAt = async (
     await prisma.document.update({
       where: { id: documentName },
       data: { lastAccessedAt: new Date() },
+      omit: { ownerExternalId: true },
     });
   } catch {
     console.info(`Document ${documentName} does not exist yet`);
@@ -205,5 +211,6 @@ const deleteDocumentWithImages = async (
     where: {
       id: documentId,
     },
+    omit: { ownerExternalId: true },
   });
 };
