@@ -60,6 +60,9 @@ importers:
       prisma:
         specifier: ^7.4.2
         version: 7.4.2(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+      yjs:
+        specifier: ^13.6.29
+        version: 13.6.29
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -118,9 +121,6 @@ importers:
       vitest-mock-extended:
         specifier: ^3.0.1
         version: 3.1.0(typescript@5.9.3)(vitest@4.0.18(@types/node@25.3.3)(jiti@2.6.0)(tsx@4.21.0))
-      yjs:
-        specifier: ^13.6.29
-        version: 13.6.29
 
 packages:
 
