@@ -2,7 +2,10 @@
 # 7-day quarantine on newly published versions (mitigates fast-revoked malicious releases).
 minimumReleaseAge: 10080
 # Lifecycle-script allowlist. pnpm 10 blocks dependency build scripts by default.
+# strictDepBuilds turns an unreviewed build script into a hard install failure
+# instead of a warning, so a new dependency lifecycle script gates CI.
 # Prisma and esbuild ship native binaries that must be fetched/built on install.
+strictDepBuilds: true
 allowBuilds:
   '@prisma/engines': true
   esbuild: true
@@ -10,8 +13,9 @@ allowBuilds:
 # Transitive-dep CVE pins. Audit periodically with `pnpm why <pkg>` and remove
 # entries whose selector no longer matches any node in pnpm-lock.yaml.
 overrides:
-  'hono@<4.12.4': '>=4.12.4'
+  'hono@<4.12.25': '>=4.12.25'
   '@hono/node-server@<1.19.10': '>=1.19.10'
+  'ws@>=8.0.0 <8.21.0': '>=8.21.0 <9'
   'fast-xml-parser@>=5.0.0 <5.5.6': '>=5.5.6'
   'effect@<3.20.0': '>=3.20.0'
   'lodash@>=4.0.0 <=4.17.23': '>=4.18.0'
@@ -20,4 +24,8 @@ overrides:
   'path-to-regexp@8.2.0': '>=8.3.0'
   'picomatch@>=4.0.0 <4.0.4': '>=4.0.4'
   'rollup@>=4.0.0 <4.59.0': '>=4.59.0 <5'
-  'vite@>=7.0.0 <7.3.2': '>=7.3.2 <8'
+  # GHSA-ggr8-5vv4-36mx (prototype pollution). Parent: prisma > @prisma/config.
+  'deepmerge-ts@<8.0.0': '>=8.0.0 <9.0.0'
+  # GHSA-3f6p-5ww8-9rcr. Optional driver pulled in by prisma; this app uses pg, but
+  # the node still resolves in the lockfile so pin it above the advisory range.
+  'mysql2@<3.22.0': '>=3.22.0 <4.0.0'

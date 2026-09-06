@@ -31,7 +31,10 @@ jobs:
       - name: Dependency Review (PR diff vs base)
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
-          fail-on-severity: high
+          # Vulnerability gating is disabled: internal policy is to wait a week
+          # before integrating updates, and this action has no time-based grace
+          # period. License enforcement stays on.
+          vulnerability-check: false
           # All permissive, except MPL-2.0 (weak/file-level copyleft) which is only
           # pulled in by build tooling (lightningcss) and is safe to consume as an
           # unmodified dependency. Compound SPDX expressions (e.g. "MIT AND MITNFA")

@@ -3,19 +3,29 @@ packages:
 # 7-day quarantine on newly published versions (mitigates fast-revoked malicious releases).
 minimumReleaseAge: 10080
 # Lifecycle-script allowlist. pnpm 10 blocks dependency build scripts by default.
+# strictDepBuilds turns an unreviewed build script into a hard install failure
+# instead of a warning, so a new dependency lifecycle script gates CI.
 # @parcel/watcher and esbuild ship native binaries vite needs; core-js's postinstall
-# is only a funding notice and stays disallowed.
+# is a funding banner only, but strictDepBuilds treats any ignored build script as a
+# fatal error, so it is set true to run the no-op and keep installs green.
+strictDepBuilds: true
 allowBuilds:
   '@parcel/watcher': true
-  core-js: false
+  core-js: true
   esbuild: true
 # Transitive/direct-dep CVE pins. Audit periodically with `pnpm why <pkg>` and remove
 # entries whose selector no longer matches any node in pnpm-lock.yaml.
 overrides:
   'jspdf@<=4.2.0': '>=4.2.1'
-  'vite@>=7.0.0 <7.3.2': '>=7.3.2 <8'
+  'ws@>=8.0.0 <8.21.0': '>=8.21.0 <9'
   'undici@>=7.0.0 <7.24.0': '>=7.24.0 <8'
   'immutable@>=5.0.0 <5.1.5': '>=5.1.5 <6'
   'flatted@<3.4.2': '>=3.4.2'
   'picomatch@<2.3.2': '2.3.2'
   'picomatch@>=4.0.0 <4.0.4': '>=4.0.4'
+  # GHSA-v245-v573-v5vm / GHSA-22p9-wv53-3rq4 (ReDoS). Parent: @tiptap/pm >
+  # prosemirror-markdown > markdown-it, which still ranges on 5.x.
+  'linkify-it@<=5.0.1': '>=5.0.2 <6.0.0'
+  # GHSA-2v37-7h3g-55p8 / -28wg-ghj8-5hjv / -xwg4-73v4-xw9w. postcss ranges on
+  # nanoid ^3.3.11, below the fix.
+  'nanoid@<3.3.18': '>=3.3.18 <4.0.0'
