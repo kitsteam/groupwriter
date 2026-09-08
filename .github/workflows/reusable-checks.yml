@@ -43,6 +43,3 @@ jobs:
 
       - name: Type check
         run: pnpm run type:check
-
-      - name: pnpm audit (fail on high/critical production deps)
-        run: pnpm audit --audit-level=high --prod

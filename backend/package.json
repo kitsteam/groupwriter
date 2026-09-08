@@ -14,7 +14,8 @@
     "build:prod": "tsc -p ./tsconfig.prod.json",
     "lint": "eslint .",
     "lint:check": "eslint --max-warnings=0 --no-fix .",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "type:check": "tsc -p ./tsconfig.json --noEmit"
@@ -26,7 +27,7 @@
     "@hocuspocus/transformer": "^3.4.4",
     "@smithy/util-stream": "^4.5.15",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^25.3.3",
+    "@types/node": "^24.13.3",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
     "aws-sdk-client-mock": "^4.1.0",
@@ -38,7 +39,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
-    "vitest": "^4.0.18",
+    "vitest": "^4.1.7",
     "vitest-mock-extended": "^3.0.1"
   },
   "dependencies": {
