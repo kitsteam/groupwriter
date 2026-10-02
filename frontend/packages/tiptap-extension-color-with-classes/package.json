@@ -23,8 +23,8 @@
     "dist"
   ],
   "devDependencies": {
-    "@tiptap/core": "^3.20.0",
-    "@tiptap/extension-text-style": "^3.20.0"
+    "@tiptap/core": "^3.31.3",
+    "@tiptap/extension-text-style": "^3.31.3"
   },
   "repository": {
     "type": "git",

@@ -128,8 +128,7 @@ export const CollaborationCommentsExtension = Mark.create<
     return {
       commentId: {
         default: null,
-        parseHTML: (el) =>
-          (el as HTMLSpanElement).getAttribute('data-comment-id'),
+        parseHTML: (el) => el.getAttribute('data-comment-id'),
         renderHTML: (attrs) => ({
           'data-comment-id':
             typeof attrs.commentId === 'string' ? attrs.commentId : ''
@@ -137,8 +136,7 @@ export const CollaborationCommentsExtension = Mark.create<
       },
       colorClass: {
         default: this.options.defaultColorClass,
-        parseHTML: (el) =>
-          (el as HTMLSpanElement).getAttribute('data-color-class'),
+        parseHTML: (el) => el.getAttribute('data-color-class'),
         renderHTML: (attrs) => {
           const colorClass =
             typeof attrs.colorClass === 'string' ? attrs.colorClass : '';

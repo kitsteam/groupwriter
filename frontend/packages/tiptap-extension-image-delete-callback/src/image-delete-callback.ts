@@ -33,8 +33,7 @@ export const ImageDeleteCallback = Extension.create<ImageDeleteCallbackOptions>(
         if (src && node.type.name === 'image' && !srcs.has(src)) {
           // Only use the callback for local changes, ignore changes from the origin server
           const ySyncUpdate = transaction.getMeta('y-sync$') as
-            | YSyncMeta
-            | undefined;
+            YSyncMeta | undefined;
           if (
             src?.startsWith(this.options.url) &&
             !ySyncUpdate?.isChangeOrigin

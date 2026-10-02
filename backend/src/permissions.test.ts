@@ -10,7 +10,7 @@ describe("checkPermission", () => {
       id: doc.id,
       data: doc.data,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
 
     const result = await checkPermission(
       prismaMock,
@@ -26,7 +26,7 @@ describe("checkPermission", () => {
       id: doc.id,
       data: doc.data,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
 
     const result = await checkPermission(prismaMock, doc.id, "wrong");
     expect(result).toBe(false);

@@ -73,7 +73,7 @@ describe("deleteDocument", () => {
     prismaMock.document.findFirst.mockResolvedValue({
       id: doc.id,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
     prismaMock.image.findMany.mockResolvedValue([]);
     prismaMock.document.delete.mockResolvedValue(doc);
 
@@ -96,7 +96,7 @@ describe("deleteDocument", () => {
     prismaMock.document.findFirst.mockResolvedValue({
       id: doc.id,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
     prismaMock.image.findMany.mockResolvedValue([image]);
     prismaMock.document.delete.mockResolvedValue(doc);
     vi.mocked(deleteImage).mockResolvedValue(image);
@@ -174,7 +174,7 @@ describe("fetchDocument", () => {
       id: doc.id,
       data: doc.data,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
 
     const result = await fetchDocument(prismaMock, doc.id);
 
@@ -208,7 +208,7 @@ describe("isValidModificationSecret", () => {
       id: doc.id,
       data: doc.data,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
 
     const result = await isValidModificationSecret(
       prismaMock,
@@ -225,7 +225,7 @@ describe("isValidModificationSecret", () => {
       id: doc.id,
       data: doc.data,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
 
     const result = await isValidModificationSecret(
       prismaMock,
@@ -347,7 +347,7 @@ describe("document ownership", () => {
       // Simulate Prisma honouring the `omit` clause for owned documents; an
       // exact match proves no element carries an ownerExternalId key.
       const ownerADocs = [buildListedDocument(), buildListedDocument()];
-      prismaMock.document.findMany.mockResolvedValue(ownerADocs as never);
+      prismaMock.document.findMany.mockResolvedValue(ownerADocs);
 
       const docs = await getDocumentsByOwner(prismaMock, "owner-A");
 
@@ -371,6 +371,13 @@ describe("document ownership", () => {
 
     it("returns an empty list if ownerExternalId is null", async () => {
       const docs = await getDocumentsByOwner(prismaMock, null);
+
+      expect(docs).toEqual([]);
+      expect(prismaMock.document.findMany).not.toHaveBeenCalled();
+    });
+
+    it("returns an empty list if ownerExternalId is undefined", async () => {
+      const docs = await getDocumentsByOwner(prismaMock, undefined);
 
       expect(docs).toEqual([]);
       expect(prismaMock.document.findMany).not.toHaveBeenCalled();

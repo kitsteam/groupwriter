@@ -20,5 +20,12 @@ export default tseslint.config(
   },
   tseslint.configs.strict,
   tseslint.configs.stylistic,
+  {
+    // Vitest mock assertions like expect(mock.fn) trip this rule.
+    files: ["**/*.test.ts", "tests/**/*.ts"],
+    rules: {
+      "@typescript-eslint/unbound-method": "off",
+    },
+  },
   eslintConfigPrettier,
 );

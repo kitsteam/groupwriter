@@ -59,10 +59,7 @@ const createMockComment = (
   ...overrides
 });
 
-const createMockMarkPos = (
-  commentId: string,
-  top = 100
-): MarkWithPos => ({
+const createMockMarkPos = (commentId: string, top = 100): MarkWithPos => ({
   commentId,
   range: { from: 0, to: 10 },
   coords: { left: 0, right: 100, top, bottom: top + 20 }

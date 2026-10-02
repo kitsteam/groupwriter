@@ -51,7 +51,7 @@ describe("handleReadOnlyMode", () => {
       id: doc.id,
       data: doc.data,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
 
     const connectionConfiguration = buildConnectionConfiguration();
 
