@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import jwt from "jsonwebtoken";
 import { TiptapTransformer } from "@hocuspocus/transformer";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
@@ -76,7 +77,7 @@ describe("server", () => {
       id: doc.id,
       data: doc.data,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
 
     const hocuspocus = await newHocuspocus({
       onAuthenticate: async ({ documentName, connectionConfig, token }) => {
@@ -111,7 +112,7 @@ describe("server", () => {
       id: doc.id,
       data: doc.data,
       modificationSecret: doc.modificationSecret,
-    } as never);
+    });
 
     const hocuspocus = await newHocuspocus({
       onAuthenticate: async ({ documentName, connectionConfig, token }) => {
@@ -157,5 +158,121 @@ describe("server", () => {
     expect(((await response.json()) as Document).id).toBeDefined();
     expect(response.status).toBe(200);
     await hocuspocus.server.destroy();
+  });
+
+  describe("GET /documents (own documents via person_id cookie)", () => {
+    const JWT_SECRET = "test-jwt-secret";
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    const getOwnDocuments = async (cookie?: string) => {
+      const hocuspocus = await newHocuspocus({
+        onRequest: async (data: onRequestPayload) => {
+          await httpRouter(data, prismaMock);
+        },
+      });
+      try {
+        const response = await fetch(`${hocuspocus.server.httpURL}/documents`, {
+          method: "GET",
+          headers: cookie ? { cookie } : {},
+        });
+        return {
+          status: response.status,
+          body: (await response.json()) as unknown,
+        };
+      } finally {
+        await hocuspocus.server.destroy();
+      }
+    };
+
+    it("returns the owner's documents for a valid cookie", async () => {
+      vi.stubEnv("JWT_SECRET", JWT_SECRET);
+      prismaMock.document.findMany.mockResolvedValue([
+        { id: "doc-1" },
+      ] as never);
+      const token = jwt.sign({ pid: "owner-1" }, JWT_SECRET, {
+        algorithm: "HS256",
+      });
+
+      const { status, body } = await getOwnDocuments(`person_id=${token}`);
+
+      expect(status).toBe(200);
+      expect(body).toEqual([{ id: "doc-1" }]);
+      expect(prismaMock.document.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { ownerExternalId: "owner-1" } }),
+      );
+    });
+
+    it.each([
+      ["unset", undefined],
+      ["empty", ""],
+    ])(
+      "returns an empty array when JWT_SECRET is %s, even for a signed cookie",
+      async (_label, secret) => {
+        vi.stubEnv("JWT_SECRET", secret);
+        prismaMock.document.findMany.mockResolvedValue([
+          { id: "doc-1" },
+        ] as never);
+        const token = jwt.sign({ pid: "owner-1" }, JWT_SECRET, {
+          algorithm: "HS256",
+        });
+
+        const { status, body } = await getOwnDocuments(`person_id=${token}`);
+
+        expect(status).toBe(200);
+        expect(body).toEqual([]);
+        expect(prismaMock.document.findMany).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      ["null", { pid: null }],
+      ["undefined (missing)", {}],
+      ["an empty string", { pid: "" }],
+      ["an object", { pid: { not: null } }],
+    ])(
+      "returns an empty array when the pid claim is %s",
+      async (_label, payload) => {
+        vi.stubEnv("JWT_SECRET", JWT_SECRET);
+        prismaMock.document.findMany.mockResolvedValue([
+          { id: "doc-1" },
+        ] as never);
+        const token = jwt.sign(payload, JWT_SECRET, { algorithm: "HS256" });
+
+        const { status, body } = await getOwnDocuments(`person_id=${token}`);
+
+        expect(status).toBe(200);
+        expect(body).toEqual([]);
+        expect(prismaMock.document.findMany).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([
+      ["no cookie header", undefined],
+      ["no person_id cookie", "other=value"],
+      ["a literal null person_id", "person_id=null"],
+      ["a literal undefined person_id", "person_id=undefined"],
+      [
+        "a token signed with another secret",
+        `person_id=${jwt.sign({ pid: "owner-1" }, "wrong-secret")}`,
+      ],
+      [
+        "an unsigned (alg none) token",
+        `person_id=${jwt.sign({ pid: "owner-1" }, "", { algorithm: "none" })}`,
+      ],
+    ])("returns an empty array for %s", async (_label, cookie) => {
+      vi.stubEnv("JWT_SECRET", JWT_SECRET);
+      prismaMock.document.findMany.mockResolvedValue([
+        { id: "doc-1" },
+      ] as never);
+
+      const { status, body } = await getOwnDocuments(cookie);
+
+      expect(status).toBe(200);
+      expect(body).toEqual([]);
+      expect(prismaMock.document.findMany).not.toHaveBeenCalled();
+    });
   });
 });

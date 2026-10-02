@@ -35,8 +35,13 @@ jobs:
           # before integrating updates, and this action has no time-based grace
           # period. License enforcement stays on.
           vulnerability-check: false
-          # All permissive, except MPL-2.0 (weak/file-level copyleft) which is only
-          # pulled in by build tooling (lightningcss) and is safe to consume as an
-          # unmodified dependency. Compound SPDX expressions (e.g. "MIT AND MITNFA")
-          # require every component to be listed here.
-          allow-licenses: MIT, MIT-0, MITNFA, Apache-2.0, BSD-2-Clause, BSD-2-Clause-Views, BSD-3-Clause, ISC, 0BSD, CC0-1.0, CC-BY-4.0, Unlicense, BlueOak-1.0.0, Zlib, PostgreSQL, Python-2.0, MPL-2.0
+          # All permissive, except MPL-2.0 and EPL-2.0 (weak/file-level copyleft),
+          # which are safe to consume as unmodified dependencies. MPL-2.0 comes from
+          # build tooling (lightningcss), EPL-2.0 from elkjs via Prisma Studio.
+          # Compound SPDX expressions (e.g. "MIT AND MITNFA") require every
+          # component to be listed here.
+          allow-licenses: MIT, MIT-0, MITNFA, Apache-2.0, BSD-2-Clause, BSD-2-Clause-Views, BSD-3-Clause, ISC, 0BSD, CC0-1.0, CC-BY-4.0, Unlicense, BlueOak-1.0.0, Zlib, PostgreSQL, Python-2.0, MPL-2.0, EPL-2.0
+          # robust-predicates (via Prisma Studio) reports
+          # LicenseRef-scancode-public-domain. The exemption applies to this
+          # package only, so other public-domain packages still fail the check.
+          allow-dependencies-licenses: pkg:npm/robust-predicates

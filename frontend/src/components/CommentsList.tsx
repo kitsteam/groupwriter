@@ -1,9 +1,4 @@
-import React, {
-  ReactElement,
-  useCallback,
-  useEffect,
-  useState
-} from 'react';
+import React, { ReactElement, useCallback, useEffect, useState } from 'react';
 import {
   CommentItem,
   MarkWithPos
