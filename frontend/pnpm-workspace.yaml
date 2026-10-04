@@ -18,8 +18,11 @@ allowBuilds:
 overrides:
   'jspdf@<=4.2.0': '>=4.2.1'
   'ws@>=8.0.0 <8.21.0': '>=8.21.0 <9'
-  'undici@>=7.0.0 <7.24.0': '>=7.24.0 <8'
-  'immutable@>=5.0.0 <5.1.5': '>=5.1.5 <6'
+  # GHSA-vmh5-mc38-953g, -vxpw-j846-p89q, -hm92-r4w5-c3mj, -4cwx-7wf7-3272,
+  # -rfgv-xxqx-mfg5, -w293-vg96-wgc3. Parent: jsdom.
+  'undici@>=7.0.0 <7.29.1': '>=7.29.1 <8'
+  # GHSA-xvcm-6775-5m9r / GHSA-v56q-mh7h-f735 (DoS). Parent: sass-embedded.
+  'immutable@>=5.0.0 <5.1.8': '>=5.1.8 <6'
   'flatted@<3.4.2': '>=3.4.2'
   'picomatch@<2.3.2': '2.3.2'
   'picomatch@>=4.0.0 <4.0.4': '>=4.0.4'
@@ -29,3 +32,8 @@ overrides:
   # GHSA-2v37-7h3g-55p8 / -28wg-ghj8-5hjv / -xwg4-73v4-xw9w. postcss ranges on
   # nanoid ^3.3.11, below the fix.
   'nanoid@<3.3.18': '>=3.3.18 <4.0.0'
+  # GHSA-c83g-rgw3-j3cx / GHSA-73wf-gq98-2v4g. Parent: eslint-plugin-react-hooks >
+  # @babel/core > @babel/helper-compilation-targets.
+  'browserslist@<4.28.7': '>=4.28.7 <5.0.0'
+  # GHSA-qhr7-859c-m2p7 / GHSA-6j4f-fj2g-mc7p (recursion DoS). Parent: eslint > minimatch.
+  'brace-expansion@>=4.0.0 <5.0.11': '>=5.0.11 <6.0.0'
