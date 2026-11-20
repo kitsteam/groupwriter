@@ -42,7 +42,7 @@ COPY --chown=node:node postcss.config.mjs vite.config.ts index.html ./
 RUN pnpm run build
 
 # Production:
-FROM nginxinc/nginx-unprivileged:stable-alpine-slim AS production
+FROM nginx/nginx-unprivileged:1.30.7-alpine-slim AS production
 
 COPY --from=production_builder --chown=nginx:nginx /home/node/app/dist /usr/share/nginx/html
 COPY --from=production_builder --chown=nginx:nginx /home/node/app/config/nginx/default.conf /etc/nginx/conf.d/default.conf
